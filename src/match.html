@@ -29,13 +29,14 @@
 <body>
 <div class="app">
   <div class="bar">
-    <a class="home" href="index.html">‹ All</a>
+    <a class="home ctl" href="index.html">‹ All</a>
     <h1>Match words</h1>
-    <label>Unit <select id="unit"></select></label>
-    <div class="seg" role="group" aria-label="Match the word to" id="kind"></div>
+    <label class="ctl">Unit <select id="unit"></select></label>
+    <div class="seg ctl" role="group" aria-label="Match the word to" id="kind"></div>
     <span class="grow"></span>
     <button class="btn" id="next" type="button">New round</button>
-    <button class="btn" id="rep" type="button">Report</button>
+    <span class="lockmark" title="Set from the teacher page">🔒 set by teacher</span>
+    <button class="btn ctl" id="rep" type="button">Report</button>
   </div>
   <main>
     <div class="region"><div class="cols" id="cols"></div></div>
@@ -53,7 +54,7 @@
 'use strict';
 const TOOL = 'match';
 const KINDS = [{ id: 'zh', label: '中文' }, { id: 'pic', label: 'Picture' }, { id: 'def', label: 'Meaning' }];
-const qs = new URLSearchParams(location.search);
+const qs = Lock.config(TOOL);
 let unit = unitById(qs.get('unit')), kind = KINDS.find(k => k.id === qs.get('kind')) || KINDS[0];
 let roundNo = 0, round = [], left = [], right = [], sel = null, done = {}, tried = {};
 const colsEl = $('#cols'), statusEl = $('#status'), report = reportDialog(TOOL, 'Match words');

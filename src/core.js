@@ -147,3 +147,31 @@ function reportDialog(tool, toolLabel) {
   addEventListener('keydown', e => { if (e.key === 'Escape') veil.hidden = true; });
   return { open() { pre.textContent = rep().text; msg.textContent = ''; veil.hidden = false; $('.btn', veil).focus(); } };
 }
+
+/* ---- teacher lock. A link with lock=1 pins this tool's options on this device (the child cannot
+   switch the clue back on); it stays pinned until the teacher page unlocks it. It hides switches:
+   it is not security — clearing the browser's site data removes it. ---- */
+const Lock = (() => {
+  const KEY = 'sharing-tools-lock-v1';
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+  const write = o => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
+  function params() {
+    const p = new URLSearchParams(location.search);
+    new URLSearchParams(location.hash.slice(1)).forEach((v, k) => p.set(k, v));
+    return p;
+  }
+  function config(tool) {
+    const p = params(), all = read();
+    if (p.get('lock') === '1') {
+      const o = {}; p.forEach((v, k) => { if (k !== 'lock') o[k] = v; });
+      all[tool] = o; write(all);
+      history.replaceState(null, '', location.pathname);       // the address bar no longer shows the settings
+    }
+    if (all[tool]) {
+      document.documentElement.classList.add('locked');
+      return { locked: true, get: k => (k in all[tool] ? all[tool][k] : null) };
+    }
+    return { locked: false, get: k => p.get(k) };
+  }
+  return { config, all: read, clear(tool) { const a = read(); if (tool) delete a[tool]; else Object.keys(a).forEach(k => delete a[k]); write(a); } };
+})();

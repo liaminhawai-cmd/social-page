@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Builds the self-contained pages in the repo root from src/*.html + src/base.css +
-src/core.js + data/units.json.  Run from anywhere:  python3 tools/build.py
+src/core.js + data/units.json, and lists printables/ on teacher.html.
+Run from anywhere:  python3 tools/build.py            (pages only)
+                    python3 tools/build.py --all      (printables and slides first, then pages)
 It also validates data/units.json (boxes must spell the word; rhymes must end in the rime)."""
 import json, pathlib, sys
 
@@ -42,6 +44,12 @@ errs = validate(data)
 if errs:
     print('DATA ERRORS:\n  ' + '\n  '.join(errs)); sys.exit(1)
 
+if '--all' in sys.argv:
+    import subprocess
+    for script in ('build_printables.py', 'build_slides.py'):
+        subprocess.run([sys.executable, str(ROOT / 'tools' / script)], check=True)
+
+printables = sorted(p.name for p in (ROOT / 'printables').glob('*') if p.suffix in ('.docx', '.pptx'))
 base_css = (ROOT / 'src' / 'base.css').read_text(encoding='utf-8')
 core_js = (ROOT / 'src' / 'core.js').read_text(encoding='utf-8')
 data_js = 'const D = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';'
@@ -50,7 +58,7 @@ assert '</script' not in data_js and '</script' not in core_js
 built = []
 for src in sorted((ROOT / 'src').glob('*.html')):
     html = src.read_text(encoding='utf-8')
-    html = html.replace('{{BASE_CSS}}', base_css).replace('{{CORE_JS}}', core_js).replace('{{DATA}}', data_js)
+    html = html.replace('{{BASE_CSS}}', base_css).replace('{{CORE_JS}}', core_js).replace('{{DATA}}', data_js).replace('{{PRINTABLES}}', json.dumps(printables))
     (ROOT / src.name).write_text(html, encoding='utf-8')
     built.append(src.name)
 print('built:', ', '.join(built))

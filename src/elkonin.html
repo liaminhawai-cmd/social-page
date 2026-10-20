@@ -14,14 +14,15 @@
 <body>
 <div class="app">
   <div class="bar">
-    <a class="home" href="index.html">‹ All</a>
+    <a class="home ctl" href="index.html">‹ All</a>
     <h1>Sound boxes</h1>
-    <label>Unit <select id="unit"></select></label>
-    <div class="seg" role="group" aria-label="Clue on the left" id="mode"></div>
-    <label><input type="checkbox" id="tilesOn"> Letter tiles</label>
+    <label class="ctl">Unit <select id="unit"></select></label>
+    <div class="seg ctl" role="group" aria-label="Clue on the left" id="mode"></div>
+    <label class="ctl"><input type="checkbox" id="tilesOn"> Letter tiles</label>
     <span class="grow"></span>
-    <button class="btn" id="print" type="button">Print blank</button>
-    <button class="btn" id="rep" type="button">Report</button>
+    <button class="btn ctl" id="print" type="button">Print blank</button>
+    <span class="lockmark" title="Set from the teacher page">🔒 set by teacher</span>
+    <button class="btn ctl" id="rep" type="button">Report</button>
   </div>
   <main>
     <div class="region" id="sheet"></div>
@@ -38,15 +39,17 @@
 </script>
 <script>
 'use strict';
+const TOOL = 'boxes';
 const MODES = [
   { id: 'word',    label: 'Word shown',   tiles: true },
   { id: 'zh',      label: 'Chinese only', tiles: false },
   { id: 'meaning', label: 'Meaning',      tiles: false },
   { id: 'sound',   label: 'Sound only',   tiles: false }
 ];
-const TOOL = 'boxes';
-let unit = unitById(new URLSearchParams(location.search).get('unit')), mode = MODES.find(m => m.id === new URLSearchParams(location.search).get('clue')) || MODES[0];
-let tilesOn = mode.tiles, cur = null;
+const cfg = Lock.config(TOOL);
+let unit = unitById(cfg.get('unit')), mode = MODES.find(m => m.id === cfg.get('clue')) || MODES[0];
+let tilesOn = cfg.get('tiles') == null ? mode.tiles : cfg.get('tiles') === '1', cur = null;
+const showOn = cfg.get('show') !== '0';
 const memo = {};   // per unit+mode+word: { vals, tries, state, seen }
 
 const sheet = $('#sheet'), statusEl = $('#status'), tray = $('#tray'), tilesEl = $('#tiles');
@@ -91,7 +94,7 @@ function buildRow(id, n) {
   const lv = h('span', { class: 'lvl', title: 'Review box: answered right first time over days' });
   const acts = h('div', { class: 'acts' },
     h('button', { class: 'btn pri', type: 'button', onclick: () => check(id) }, 'Check'),
-    h('button', { class: 'btn', type: 'button', onclick: () => show(id) }, 'Show'),
+    showOn ? h('button', { class: 'btn', type: 'button', onclick: () => show(id) }, 'Show') : null,
     h('button', { class: 'btn', type: 'button', onclick: () => clearRow(id) }, 'Clear'), lv);
   const row = h('div', { class: 'row', 'data-id': id }, clueCell(id, n), boxes, acts);
   row.addEventListener('pointerdown', () => setActive(id));
@@ -157,7 +160,7 @@ function check(id) {
     } else {
       msg = '<b>Not right: box' + (wrong.length > 1 ? 'es ' : ' ') + wrong.map(i => i + 1).join(', ') + '.</b>';
       if (empties.length) msg += ' Empty: ' + empties.join(', ') + '.';
-      if (mem.tries === 1) {
+      if (mem.tries === 1 || !showOn) {          // no Show button = no answer on later tries either
         const kinds = wrong.filter(i => mem.vals[i]).map(i => 'Box ' + (i + 1) + ' is a ' + ((D.tips[exp[i]] || {}).kind || 'single-letter sound')).filter((v, i, a) => a.indexOf(v) === i);
         if (kinds.length) msg += ' <span class="tag">' + esc(kinds.join('; ')) + '.</span>';
       } else {

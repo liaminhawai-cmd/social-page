@@ -56,7 +56,7 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
 .foot { padding:6px 14px; font-size:.8rem; color:var(--muted); border-top:1px solid var(--line); }
 
 /* the paper sheet, on screen: clue cell | boxes */
-.row { display:grid; grid-template-columns:minmax(220px,280px) 350px auto; gap:14px; align-items:center;
+.row { display:grid; grid-template-columns:minmax(220px,280px) 390px auto; gap:14px; align-items:center;
   padding:1px 4px; margin-bottom:1px; border-radius:10px; }
 .row.active { outline:2px solid var(--accent); outline-offset:2px; }
 .clue { background:var(--clue); border-radius:6px; padding:2px 10px; min-height:46px; display:flex;
@@ -84,6 +84,11 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
 .acts .btn { min-height:36px; padding:4px 10px; font-size:.9rem; }
 .lvl { font-size:.8rem; letter-spacing:1px; color:var(--muted); min-width:56px; text-align:right; }
 .due { font-size:.72rem; border:1px solid var(--muted); border-radius:6px; padding:0 5px; color:var(--muted); }
+
+/* teacher lock: switches disappear; a small mark says the page is pinned */
+.lockmark { display:none; font-size:.85rem; color:var(--muted); }
+.locked .lockmark { display:inline; }
+.locked .ctl { display:none !important; }
 
 /* tiles */
 .tray { border-top:1px solid var(--line); background:var(--card); padding:8px 14px; max-height:34vh; overflow:auto; }
@@ -155,14 +160,15 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
 <body>
 <div class="app">
   <div class="bar">
-    <a class="home" href="index.html">‹ All</a>
+    <a class="home ctl" href="index.html">‹ All</a>
     <h1>Rhyming words</h1>
-    <label>Unit <select id="unit"></select></label>
-    <div class="seg" role="group" aria-label="Activity" id="task"></div>
+    <label class="ctl">Unit <select id="unit"></select></label>
+    <div class="seg ctl" role="group" aria-label="Activity" id="task"></div>
     <div class="fam" id="fam" role="group" aria-label="Word ending"></div>
     <span class="grow"></span>
-    <label id="tilesLbl"><input type="checkbox" id="tilesOn" checked> Letter tiles</label>
-    <button class="btn" id="rep" type="button">Report</button>
+    <label id="tilesLbl" class="ctl"><input type="checkbox" id="tilesOn" checked> Letter tiles</label>
+    <span class="lockmark" title="Set from the teacher page">🔒 set by teacher</span>
+    <button class="btn ctl" id="rep" type="button">Report</button>
   </div>
   <main>
     <div class="region"><div class="stage" id="stage"></div></div>
@@ -172,7 +178,7 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
   </main>
 </div>
 <script>
-const D = {"_about":"SOURCE OF TRUTH for every tool in this repo (sound boxes, match, rhyme). Edit here, then run: python3 tools/build.py. Vocabulary only — no names, no book text. Chinese is written Traditional, Hong Kong usage; have a Cantonese speaker check it.","_boxes":"One box per SOUND. parts = list of words; each word = list of boxes. Two-letter and three-letter spellings share one box (sh, ai, are). A final silent e goes with the consonant before it (ce, ke, ve, se), as on the paper sheets.","tips":{"sh":{"kind":"2-letter sound","tip":"sh: two letters make one sound, so they share one box."},"ai":{"kind":"2-letter sound","tip":"ai: two letters make one sound (the 'ay' in wait)."},"ie":{"kind":"2-letter sound","tip":"ie says /e/ in friend. It is a tricky spelling — learn it as one chunk."},"are":{"kind":"3-letter sound","tip":"are: three letters make the 'air' sound in share. One box."},"ea":{"kind":"2-letter sound","tip":"ea: two letters make one sound (the 'ee' in cream)."},"ph":{"kind":"2-letter sound","tip":"ph says /f/ in elephant. Two letters, one sound."},"ve":{"kind":"silent-e ending","tip":"English words do not end in v. 've' is one box and the e is silent."},"ce":{"kind":"silent-e ending","tip":"ce says /s/ (c before e is soft). The e is silent, and it makes the i say its name."},"ke":{"kind":"silent-e ending","tip":"ke says /k/. The e is silent, and it makes the a say its name: a-ke."},"se":{"kind":"silent-e ending","tip":"se says /s/ at the end of mouse. The e is silent."},"ou":{"kind":"2-letter sound","tip":"ou says /ow/ in mouse. Two letters, one sound."},"ur":{"kind":"2-letter sound","tip":"ur: two letters make one sound (/er/)."},"ck":{"kind":"2-letter sound","tip":"ck: two letters make one /k/ sound, used straight after a short vowel at the end of a word."},"th":{"kind":"2-letter sound","tip":"th: two letters make one sound."}},"words":{"pig":{"zh":"豬","icon":"🐷","def":"A pink farm animal.","parts":[["p","i","g"]]},"sad":{"zh":"傷心","icon":"😢","def":"You feel this when you want to cry.","parts":[["s","a","d"]]},"hot":{"zh":"熱","icon":"🥵","def":"Very warm. Not cold.","parts":[["h","o","t"]]},"give":{"zh":"給","icon":"🎁","def":"You hand something to a person.","parts":[["g","i","ve"]]},"wait":{"zh":"等","icon":"⏳","def":"Stay. Do not go yet.","parts":[["w","ai","t"]]},"cold":{"zh":"凍","icon":"🥶","def":"Not hot. Ice is cold.","parts":[["c","o","l","d"]],"tip":"o says its own name (/oh/) in cold — the same in old, hold and gold."},"share":{"zh":"分享","icon":"🍪🤝","def":"You give some to a friend and keep some too.","parts":[["sh","are"]]},"friend":{"zh":"朋友","icon":"👫","def":"A person you like. You play together.","parts":[["f","r","ie","n","d"]]},"ice cream":{"zh":"雪糕","icon":"🍦","def":"A cold, sweet food.","parts":[["i","ce"],["c","r","ea","m"]]},"elephant":{"zh":"大象","icon":"🐘","def":"A very big animal with a long trunk.","parts":[["e","l","e","ph","a","n","t"]],"tip":"Seven sounds, seven boxes. Say it in chunks: el - e - phant."},"kind":{"zh":"友善","icon":"🤗","def":"Nice to other people. You help and you share.","parts":[["k","i","n","d"]],"tip":"i says its own name (/eye/) in kind — the same in find and mind."},"mouse":{"zh":"老鼠","icon":"🐭","def":"A very small animal with a long tail.","parts":[["m","ou","se"]]},"take":{"zh":"拿","icon":"✋","def":"Get something into your hand.","parts":[["t","a","ke"]]},"turn":{"zh":"輪流","icon":"🔄","def":"Your go. Then it is my go.","parts":[["t","ur","n"]]},"snack":{"zh":"小食","icon":"🍎","def":"A small food between meals.","parts":[["s","n","a","ck"]]},"thanks":{"zh":"多謝","icon":"🙏","def":"Words you say when someone gives you something.","parts":[["th","a","n","k","s"]]},"zebra":{"zh":"斑馬","icon":"🦓","def":"A black and white striped animal.","parts":[["z","e","b","r","a"]]}},"units":[{"id":"share-1","title":"Sharing 1: ice cream","zh":"分享 1：雪糕","words":["pig","sad","hot","give","wait","cold","share","friend","ice cream","elephant"]},{"id":"share-2","title":"Sharing 2: being kind","zh":"分享 2：友善","words":["kind","mouse","take","turn","snack","thanks","zebra","share","give"]}],"rhymes":[{"id":"ig","unit":"share-1","rime":"ig","key":"pig","words":["pig","big","dig","wig","fig","jig"],"gloss":{"pig":"豬","big":"大","dig":"挖","wig":"假髮","fig":"無花果","jig":"輕快的舞"},"near":[{"w":"pin","rime":"in"},{"w":"peg","rime":"eg"},{"w":"bag","rime":"ag"},{"w":"dog","rime":"og"}]},{"id":"ot","unit":"share-1","rime":"ot","key":"hot","words":["hot","pot","dot","cot","got","lot","not","rot"],"gloss":{"hot":"熱","pot":"鍋","dot":"點","cot":"嬰兒床","got":"得到","lot":"很多","not":"不","rot":"腐爛"},"near":[{"w":"hat","rime":"at"},{"w":"hop","rime":"op"},{"w":"net","rime":"et"},{"w":"cut","rime":"ut"}]},{"id":"ad","unit":"share-1","rime":"ad","key":"sad","words":["sad","mad","dad","bad","had","pad","glad"],"gloss":{"sad":"傷心","mad":"生氣","dad":"爸爸","bad":"壞","had":"有","pad":"墊子","glad":"高興"},"near":[{"w":"sat","rime":"at"},{"w":"sip","rime":"ip"},{"w":"bed","rime":"ed"},{"w":"mud","rime":"ud"}]},{"id":"old","unit":"share-1","rime":"old","key":"cold","words":["cold","old","hold","gold","bold","told","sold","fold"],"gloss":{"cold":"凍","old":"舊","hold":"拿著","gold":"金","bold":"勇敢","told":"告訴了","sold":"賣了","fold":"摺"},"near":[{"w":"cod","rime":"od"},{"w":"cool","rime":"ool"},{"w":"wild","rime":"ild"},{"w":"cord","rime":"ord"}]},{"id":"ouse","unit":"share-2","rime":"ouse","key":"mouse","words":["mouse","house","louse","blouse"],"gloss":{"mouse":"老鼠","house":"房子","louse":"蝨子","blouse":"女裝上衣"},"near":[{"w":"moose","rime":"oose"},{"w":"mouth","rime":"outh"},{"w":"mess","rime":"ess"},{"w":"horse","rime":"orse"}]},{"id":"ake","unit":"share-2","rime":"ake","key":"take","words":["take","make","cake","bake","lake","wake","rake","shake","snake"],"gloss":{"take":"拿","make":"做","cake":"蛋糕","bake":"焗","lake":"湖","wake":"醒","rake":"耙","shake":"搖","snake":"蛇"},"near":[{"w":"tack","rime":"ack"},{"w":"tape","rime":"ape"},{"w":"bike","rime":"ike"},{"w":"talk","rime":"alk"}]},{"id":"ack","unit":"share-2","rime":"ack","key":"snack","words":["snack","back","sack","pack","black","track","crack","quack"],"gloss":{"snack":"小食","back":"背","sack":"大袋","pack":"包","black":"黑色","track":"軌道","crack":"裂縫","quack":"嘎嘎叫"},"near":[{"w":"snap","rime":"ap"},{"w":"snow","rime":"ow"},{"w":"sock","rime":"ock"},{"w":"neck","rime":"eck"}]},{"id":"ind","unit":"share-2","rime":"ind","key":"kind","words":["kind","find","mind","bind","blind","grind"],"gloss":{"kind":"友善","find":"找到","mind":"介意","bind":"綁","blind":"盲","grind":"磨"},"near":[{"w":"king","rime":"ing"},{"w":"kid","rime":"id"},{"w":"mend","rime":"end"},{"w":"hand","rime":"and"}]}]};
+const D = {"_about":"SOURCE OF TRUTH for every tool in this repo (sound boxes, match, rhyme). Edit here, then run: python3 tools/build.py. Vocabulary only — no names, no book text. Chinese is written Traditional, Hong Kong usage; have a Cantonese speaker check it.","_boxes":"One box per SOUND. parts = list of syllables (and words); each = list of boxes, and a gap is left between them, as on the hand-made sheets (can | dy). Two-letter and three-letter spellings share one box (sh, ai, are). A final silent e goes with the consonant before it (ce, ke, ve, se), as on the paper sheets.","tips":{"sh":{"kind":"2-letter sound","tip":"sh: two letters make one sound, so they share one box."},"ai":{"kind":"2-letter sound","tip":"ai: two letters make one sound (the 'ay' in wait)."},"ie":{"kind":"2-letter sound","tip":"ie says /e/ in friend. It is a tricky spelling — learn it as one chunk."},"are":{"kind":"3-letter sound","tip":"are: three letters make the 'air' sound in share. One box."},"ea":{"kind":"2-letter sound","tip":"ea: two letters make one sound (the 'ee' in cream)."},"ph":{"kind":"2-letter sound","tip":"ph says /f/ in elephant. Two letters, one sound."},"ve":{"kind":"silent-e ending","tip":"English words do not end in v. 've' is one box and the e is silent."},"ce":{"kind":"silent-e ending","tip":"ce says /s/ (c before e is soft). The e is silent, and it makes the i say its name."},"ke":{"kind":"silent-e ending","tip":"ke says /k/. The e is silent, and it makes the a say its name: a-ke."},"se":{"kind":"silent-e ending","tip":"se says /s/ at the end of mouse. The e is silent."},"ou":{"kind":"2-letter sound","tip":"ou says /ow/ in mouse. Two letters, one sound."},"ur":{"kind":"2-letter sound","tip":"ur: two letters make one sound (/er/)."},"ck":{"kind":"2-letter sound","tip":"ck: two letters make one /k/ sound, used straight after a short vowel at the end of a word."},"th":{"kind":"2-letter sound","tip":"th: two letters make one sound."}},"words":{"pig":{"zh":"豬","icon":"🐷","def":"A pink farm animal.","parts":[["p","i","g"]]},"sad":{"zh":"傷心","icon":"😢","def":"You feel this when you want to cry.","parts":[["s","a","d"]]},"hot":{"zh":"熱","icon":"🥵","def":"Very warm. Not cold.","parts":[["h","o","t"]]},"give":{"zh":"給","icon":"🎁","def":"You hand something to a person.","parts":[["g","i","ve"]]},"wait":{"zh":"等","icon":"⏳","def":"Stay. Do not go yet.","parts":[["w","ai","t"]]},"cold":{"zh":"凍","icon":"🥶","def":"Not hot. Ice is cold.","parts":[["c","o","l","d"]],"tip":"o says its own name (/oh/) in cold — the same in old, hold and gold."},"share":{"zh":"分享","icon":"🍪🤝","def":"You give some to a friend and keep some too.","parts":[["sh","are"]]},"friend":{"zh":"朋友","icon":"👫","def":"A person you like. You play together.","parts":[["f","r","ie","n","d"]]},"ice cream":{"zh":"雪糕","icon":"🍦","def":"A cold, sweet food.","parts":[["i","ce"],["c","r","ea","m"]]},"elephant":{"zh":"大象","icon":"🐘","def":"A very big animal with a long trunk.","parts":[["e","l"],["e"],["ph","a","n","t"]],"tip":"Three syllables, seven sounds: el | e | phant."},"kind":{"zh":"友善","icon":"🤗","def":"Nice to other people. You help and you share.","parts":[["k","i","n","d"]],"tip":"i says its own name (/eye/) in kind — the same in find and mind."},"mouse":{"zh":"老鼠","icon":"🐭","def":"A very small animal with a long tail.","parts":[["m","ou","se"]]},"take":{"zh":"拿","icon":"✋","def":"Get something into your hand.","parts":[["t","a","ke"]]},"turn":{"zh":"輪流","icon":"🔄","def":"Your go. Then it is my go.","parts":[["t","ur","n"]]},"snack":{"zh":"小食","icon":"🍎","def":"A small food between meals.","parts":[["s","n","a","ck"]]},"thanks":{"zh":"多謝","icon":"🙏","def":"Words you say when someone gives you something.","parts":[["th","a","n","k","s"]]},"zebra":{"zh":"斑馬","icon":"🦓","def":"A black and white striped animal.","parts":[["z","e"],["b","r","a"]]}},"units":[{"id":"share-1","title":"Sharing 1: ice cream","zh":"分享 1：雪糕","words":["pig","sad","hot","give","wait","cold","share","friend","ice cream","elephant"]},{"id":"share-2","title":"Sharing 2: being kind","zh":"分享 2：友善","words":["kind","mouse","take","turn","snack","thanks","zebra","share","give"]}],"rhymes":[{"id":"ig","unit":"share-1","rime":"ig","key":"pig","words":["pig","big","dig","wig","fig","jig"],"gloss":{"pig":"豬","big":"大","dig":"挖","wig":"假髮","fig":"無花果","jig":"輕快的舞"},"near":[{"w":"pin","rime":"in"},{"w":"peg","rime":"eg"},{"w":"bag","rime":"ag"},{"w":"dog","rime":"og"}]},{"id":"ot","unit":"share-1","rime":"ot","key":"hot","words":["hot","pot","dot","cot","got","lot","not","rot"],"gloss":{"hot":"熱","pot":"鍋","dot":"點","cot":"嬰兒床","got":"得到","lot":"很多","not":"不","rot":"腐爛"},"near":[{"w":"hat","rime":"at"},{"w":"hop","rime":"op"},{"w":"net","rime":"et"},{"w":"cut","rime":"ut"}]},{"id":"ad","unit":"share-1","rime":"ad","key":"sad","words":["sad","mad","dad","bad","had","pad","glad"],"gloss":{"sad":"傷心","mad":"生氣","dad":"爸爸","bad":"壞","had":"有","pad":"墊子","glad":"高興"},"near":[{"w":"sat","rime":"at"},{"w":"sip","rime":"ip"},{"w":"bed","rime":"ed"},{"w":"mud","rime":"ud"}]},{"id":"old","unit":"share-1","rime":"old","key":"cold","words":["cold","old","hold","gold","bold","told","sold","fold"],"gloss":{"cold":"凍","old":"舊","hold":"拿著","gold":"金","bold":"勇敢","told":"告訴了","sold":"賣了","fold":"摺"},"near":[{"w":"cod","rime":"od"},{"w":"cool","rime":"ool"},{"w":"wild","rime":"ild"},{"w":"cord","rime":"ord"}]},{"id":"ouse","unit":"share-2","rime":"ouse","key":"mouse","words":["mouse","house","louse","blouse"],"gloss":{"mouse":"老鼠","house":"房子","louse":"蝨子","blouse":"女裝上衣"},"near":[{"w":"moose","rime":"oose"},{"w":"mouth","rime":"outh"},{"w":"mess","rime":"ess"},{"w":"horse","rime":"orse"}]},{"id":"ake","unit":"share-2","rime":"ake","key":"take","words":["take","make","cake","bake","lake","wake","rake","shake","snake"],"gloss":{"take":"拿","make":"做","cake":"蛋糕","bake":"焗","lake":"湖","wake":"醒","rake":"耙","shake":"搖","snake":"蛇"},"near":[{"w":"tack","rime":"ack"},{"w":"tape","rime":"ape"},{"w":"bike","rime":"ike"},{"w":"talk","rime":"alk"}]},{"id":"ack","unit":"share-2","rime":"ack","key":"snack","words":["snack","back","sack","pack","black","track","crack","quack"],"gloss":{"snack":"小食","back":"背","sack":"大袋","pack":"包","black":"黑色","track":"軌道","crack":"裂縫","quack":"嘎嘎叫"},"near":[{"w":"snap","rime":"ap"},{"w":"snow","rime":"ow"},{"w":"sock","rime":"ock"},{"w":"neck","rime":"eck"}]},{"id":"ind","unit":"share-2","rime":"ind","key":"kind","words":["kind","find","mind","bind","blind","grind"],"gloss":{"kind":"友善","find":"找到","mind":"介意","bind":"綁","blind":"盲","grind":"磨"},"near":[{"w":"king","rime":"ing"},{"w":"kid","rime":"id"},{"w":"mend","rime":"end"},{"w":"hand","rime":"and"}]}]};
 </script>
 <script>
 /* shared by every tool. Inlined by tools/build.py — do not load from a CDN. */
@@ -325,13 +331,42 @@ function reportDialog(tool, toolLabel) {
   return { open() { pre.textContent = rep().text; msg.textContent = ''; veil.hidden = false; $('.btn', veil).focus(); } };
 }
 
+/* ---- teacher lock. A link with lock=1 pins this tool's options on this device (the child cannot
+   switch the clue back on); it stays pinned until the teacher page unlocks it. It hides switches:
+   it is not security — clearing the browser's site data removes it. ---- */
+const Lock = (() => {
+  const KEY = 'sharing-tools-lock-v1';
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+  const write = o => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
+  function params() {
+    const p = new URLSearchParams(location.search);
+    new URLSearchParams(location.hash.slice(1)).forEach((v, k) => p.set(k, v));
+    return p;
+  }
+  function config(tool) {
+    const p = params(), all = read();
+    if (p.get('lock') === '1') {
+      const o = {}; p.forEach((v, k) => { if (k !== 'lock') o[k] = v; });
+      all[tool] = o; write(all);
+      history.replaceState(null, '', location.pathname);       // the address bar no longer shows the settings
+    }
+    if (all[tool]) {
+      document.documentElement.classList.add('locked');
+      return { locked: true, get: k => (k in all[tool] ? all[tool][k] : null) };
+    }
+    return { locked: false, get: k => p.get(k) };
+  }
+  return { config, all: read, clear(tool) { const a = read(); if (tool) delete a[tool]; else Object.keys(a).forEach(k => delete a[k]); write(a); } };
+})();
+
 </script>
 <script>
 'use strict';
 const TOOL = 'rhyme';
 const TASKS = [{ id: 'make', label: 'Make rhymes' }, { id: 'judge', label: 'Rhyme or not?' }];
-const qs = new URLSearchParams(location.search);
-let unit = unitById(qs.get('unit')), task = TASKS.find(t => t.id === qs.get('task')) || TASKS[0], fam = null, tilesOn = true;
+const qs = Lock.config(TOOL);
+let unit = unitById(qs.get('unit')), task = TASKS.find(t => t.id === qs.get('task')) || TASKS[0], fam = null, tilesOn = qs.get('tiles') !== '0';
+const showOn = qs.get('show') !== '0';
 let found = [], shownAll = false, tried = {}, quiz = [];
 const stage = $('#stage'), statusEl = $('#status'), tray = $('#tray'), tilesEl = $('#tiles'), famEl = $('#fam');
 const report = reportDialog(TOOL, 'Rhyming words');
@@ -358,7 +393,7 @@ function drawMake() {
   const row = h('div', { class: 'key' }, keyCard(f),
     h('div', { class: 'boxes', role: 'group', 'aria-label': 'Starting sound, then the ending' }, inp, ...kp.rime.map(g => h('span', { class: 'rbx', 'aria-hidden': 'false' }, g))),
     h('button', { class: 'btn pri', type: 'button', onclick: () => attempt(inp) }, 'Check'),
-    h('button', { class: 'btn', type: 'button', onclick: () => { shownAll = true; drawMake(); say('The rest are shown in dotted boxes.'); } }, 'Show the rest'));
+    showOn ? h('button', { class: 'btn', type: 'button', onclick: () => { shownAll = true; drawMake(); say('The rest are shown in dotted boxes.'); } }, 'Show the rest') : null);
   const chips = h('div', { class: 'chips' });
   found.forEach(w => chips.append(chip(f, w, false)));
   if (shownAll) others.filter(w => !found.includes(w)).forEach(w => chips.append(chip(f, w, true)));
@@ -441,6 +476,7 @@ const taskBox = $('#task');
 TASKS.forEach(t => taskBox.append(h('button', { type: 'button', 'data-t': t.id, 'aria-pressed': String(t.id === task.id), onclick: () => {
   task = t; $$('button', taskBox).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t.id))); say(''); draw();
 } }, t.label)));
+$('#tilesOn').checked = tilesOn;
 $('#tilesOn').addEventListener('change', e => { tilesOn = e.target.checked; applyTiles(); });
 $('#rep').addEventListener('click', () => report.open());
 buildTiles(); buildFams();

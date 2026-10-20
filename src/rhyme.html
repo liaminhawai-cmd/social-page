@@ -35,14 +35,15 @@
 <body>
 <div class="app">
   <div class="bar">
-    <a class="home" href="index.html">‹ All</a>
+    <a class="home ctl" href="index.html">‹ All</a>
     <h1>Rhyming words</h1>
-    <label>Unit <select id="unit"></select></label>
-    <div class="seg" role="group" aria-label="Activity" id="task"></div>
+    <label class="ctl">Unit <select id="unit"></select></label>
+    <div class="seg ctl" role="group" aria-label="Activity" id="task"></div>
     <div class="fam" id="fam" role="group" aria-label="Word ending"></div>
     <span class="grow"></span>
-    <label id="tilesLbl"><input type="checkbox" id="tilesOn" checked> Letter tiles</label>
-    <button class="btn" id="rep" type="button">Report</button>
+    <label id="tilesLbl" class="ctl"><input type="checkbox" id="tilesOn" checked> Letter tiles</label>
+    <span class="lockmark" title="Set from the teacher page">🔒 set by teacher</span>
+    <button class="btn ctl" id="rep" type="button">Report</button>
   </div>
   <main>
     <div class="region"><div class="stage" id="stage"></div></div>
@@ -61,8 +62,9 @@
 'use strict';
 const TOOL = 'rhyme';
 const TASKS = [{ id: 'make', label: 'Make rhymes' }, { id: 'judge', label: 'Rhyme or not?' }];
-const qs = new URLSearchParams(location.search);
-let unit = unitById(qs.get('unit')), task = TASKS.find(t => t.id === qs.get('task')) || TASKS[0], fam = null, tilesOn = true;
+const qs = Lock.config(TOOL);
+let unit = unitById(qs.get('unit')), task = TASKS.find(t => t.id === qs.get('task')) || TASKS[0], fam = null, tilesOn = qs.get('tiles') !== '0';
+const showOn = qs.get('show') !== '0';
 let found = [], shownAll = false, tried = {}, quiz = [];
 const stage = $('#stage'), statusEl = $('#status'), tray = $('#tray'), tilesEl = $('#tiles'), famEl = $('#fam');
 const report = reportDialog(TOOL, 'Rhyming words');
@@ -89,7 +91,7 @@ function drawMake() {
   const row = h('div', { class: 'key' }, keyCard(f),
     h('div', { class: 'boxes', role: 'group', 'aria-label': 'Starting sound, then the ending' }, inp, ...kp.rime.map(g => h('span', { class: 'rbx', 'aria-hidden': 'false' }, g))),
     h('button', { class: 'btn pri', type: 'button', onclick: () => attempt(inp) }, 'Check'),
-    h('button', { class: 'btn', type: 'button', onclick: () => { shownAll = true; drawMake(); say('The rest are shown in dotted boxes.'); } }, 'Show the rest'));
+    showOn ? h('button', { class: 'btn', type: 'button', onclick: () => { shownAll = true; drawMake(); say('The rest are shown in dotted boxes.'); } }, 'Show the rest') : null);
   const chips = h('div', { class: 'chips' });
   found.forEach(w => chips.append(chip(f, w, false)));
   if (shownAll) others.filter(w => !found.includes(w)).forEach(w => chips.append(chip(f, w, true)));
@@ -172,6 +174,7 @@ const taskBox = $('#task');
 TASKS.forEach(t => taskBox.append(h('button', { type: 'button', 'data-t': t.id, 'aria-pressed': String(t.id === task.id), onclick: () => {
   task = t; $$('button', taskBox).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t.id))); say(''); draw();
 } }, t.label)));
+$('#tilesOn').checked = tilesOn;
 $('#tilesOn').addEventListener('change', e => { tilesOn = e.target.checked; applyTiles(); });
 $('#rep').addEventListener('click', () => report.open());
 buildTiles(); buildFams();

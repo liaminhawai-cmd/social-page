@@ -1,6 +1,6 @@
 {
   "_about": "SOURCE OF TRUTH for every tool in this repo (sound boxes, match, rhyme). Edit here, then run: python3 tools/build.py. Vocabulary only — no names, no book text. Chinese is written Traditional, Hong Kong usage; have a Cantonese speaker check it.",
-  "_boxes": "One box per SOUND. parts = list of words; each word = list of boxes. Two-letter and three-letter spellings share one box (sh, ai, are). A final silent e goes with the consonant before it (ce, ke, ve, se), as on the paper sheets.",
+  "_boxes": "One box per SOUND. parts = list of syllables (and words); each = list of boxes, and a gap is left between them, as on the hand-made sheets (can | dy). Two-letter and three-letter spellings share one box (sh, ai, are). A final silent e goes with the consonant before it (ce, ke, ve, se), as on the paper sheets.",
   "tips": {
     "sh": {"kind": "2-letter sound", "tip": "sh: two letters make one sound, so they share one box."},
     "ai": {"kind": "2-letter sound", "tip": "ai: two letters make one sound (the 'ay' in wait)."},
@@ -28,8 +28,8 @@
     "share":     {"zh": "分享", "icon": "🍪🤝", "def": "You give some to a friend and keep some too.", "parts": [["sh","are"]]},
     "friend":    {"zh": "朋友", "icon": "👫", "def": "A person you like. You play together.",        "parts": [["f","r","ie","n","d"]]},
     "ice cream": {"zh": "雪糕", "icon": "🍦", "def": "A cold, sweet food.",                         "parts": [["i","ce"],["c","r","ea","m"]]},
-    "elephant":  {"zh": "大象", "icon": "🐘", "def": "A very big animal with a long trunk.",        "parts": [["e","l","e","ph","a","n","t"]],
-                  "tip": "Seven sounds, seven boxes. Say it in chunks: el - e - phant."},
+    "elephant":  {"zh": "大象", "icon": "🐘", "def": "A very big animal with a long trunk.",        "parts": [["e","l"],["e"],["ph","a","n","t"]],
+                  "tip": "Three syllables, seven sounds: el | e | phant."},
     "kind":      {"zh": "友善", "icon": "🤗", "def": "Nice to other people. You help and you share.", "parts": [["k","i","n","d"]],
                   "tip": "i says its own name (/eye/) in kind — the same in find and mind."},
     "mouse":     {"zh": "老鼠", "icon": "🐭", "def": "A very small animal with a long tail.",       "parts": [["m","ou","se"]]},
@@ -37,7 +37,7 @@
     "turn":      {"zh": "輪流", "icon": "🔄", "def": "Your go. Then it is my go.",                  "parts": [["t","ur","n"]]},
     "snack":     {"zh": "小食", "icon": "🍎", "def": "A small food between meals.",                 "parts": [["s","n","a","ck"]]},
     "thanks":    {"zh": "多謝", "icon": "🙏", "def": "Words you say when someone gives you something.", "parts": [["th","a","n","k","s"]]},
-    "zebra":     {"zh": "斑馬", "icon": "🦓", "def": "A black and white striped animal.",           "parts": [["z","e","b","r","a"]]}
+    "zebra":     {"zh": "斑馬", "icon": "🦓", "def": "A black and white striped animal.",           "parts": [["z","e"],["b","r","a"]]}
   },
   "units": [
     {"id": "share-1", "title": "Sharing 1: ice cream", "zh": "分享 1：雪糕",

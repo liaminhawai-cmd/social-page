@@ -3,8 +3,9 @@
    PUBLIC_DENY="word1,word2" python3 tools/check-public.py
 The deny list comes from the environment on purpose: never commit the names you are protecting.
 Checks: denied words in any text file or path; no network calls or external loads in the pages;
-no images, PDFs or office documents in the repo (no book scans, no planning documents)."""
-import os, re, subprocess, sys, pathlib
+no images or PDFs anywhere; Word/PowerPoint files only as generated printables in printables/,
+with their text and document properties scanned for the denied words and an empty author."""
+import os, re, subprocess, sys, pathlib, zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 files = subprocess.run(['git', 'ls-files', '-co', '--exclude-standard'], cwd=ROOT, capture_output=True, text=True).stdout.split('\n')
@@ -17,6 +18,18 @@ BLOCKED_EXT = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.docx', '.doc'
 NET = re.compile(r'fetch\s*\(|XMLHttpRequest|sendBeacon|WebSocket|importScripts|<script[^>]+src=|<link[^>]+href=|@import|https?://', re.I)
 for f in files:
     p = ROOT / f; ext = p.suffix.lower()
+    if ext in ('.docx', '.pptx') and f.startswith('printables/') and '/' not in f[len('printables/'):]:
+        with zipfile.ZipFile(p) as z:
+            for name in z.namelist():
+                if not name.endswith('.xml'): continue
+                t = z.read(name).decode('utf-8', 'ignore')
+                text = re.sub(r'<[^>]+>', ' ', t)          # visible text only: tag and namespace names would match short words
+                for d in deny:
+                    if re.search(re.escape(d), text, re.I): bad.append(f'{f} ({name}): denied word "{d}"')
+                if name == 'docProps/core.xml':
+                    m = re.search(r'<dc:creator>([^<]+)</dc:creator>', t) or re.search(r'<cp:lastModifiedBy>([^<]+)<', t)
+                    if m: bad.append(f'{f}: document properties name an author: {m.group(1)}')
+        continue
     if ext in BLOCKED_EXT: bad.append(f'{f}: file type not allowed in this repo'); continue
     for d in deny:
         if re.search(re.escape(d), f, re.I): bad.append(f'{f}: path contains a denied word')
