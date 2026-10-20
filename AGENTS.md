@@ -1,0 +1,31 @@
+# Read this first (AI assistants)
+
+**This repo is PUBLIC.** Whatever is on `main` can be on the internet within minutes.
+Teaching tools for a small-group English literacy unit about sharing. Read `STYLE_GUIDE.md` in the
+`Phonics` repo first — the build principles for every teaching resource here.
+
+## Hard rules
+
+1. **No names of any student, family or staff member, no school names** — in code, content, examples,
+   commit messages, file names or metadata. Not even as a "test" value.
+2. **No reproducing copyrighted works.** No picture-book pages, page images or page text, no scans,
+   no planning documents. Vocabulary and original definitions are fine; a book may be named in the README.
+3. **Nothing leaves the device.** No accounts, analytics, `fetch`, CDNs or external fonts. `localStorage`
+   only, and the interface says so. `tools/check-public.py` fails the build if this is broken.
+4. **No images, PDFs or office files in this repo.** Printables and slides live in a private repo.
+5. **Say what you checked in the commit message** (names, copyright, network). Run:
+   `PUBLIC_DENY="name1,name2" python3 tools/check-public.py` — the deny list is never committed.
+
+## Conventions
+
+- `data/units.json` is the single source of truth. Edit it, then `python3 tools/build.py` (it validates the
+  word boxes and the rhyme lists, then writes the pages into the repo root). **Do not edit the root `*.html`
+  files** — they are generated and carry a header saying so.
+- One self-contained `.html` per tool; no build step for the reader; works offline and on a phone.
+- One box per sound. Multi-letter sounds (sh, ai, are) share a box; a final silent e goes with the consonant before it.
+- Chinese is written Traditional, Hong Kong usage. Have a Cantonese speaker check any new entry.
+- No fluff: no points, streaks, badges or praise banners. Feedback names the rule and points at the box.
+- Judge, never prevent: accept any attempt, evaluate it, explain it. The first wrong answer points at the box and
+  names the kind of sound; the second shows the answer and the rule.
+- Persisted data: first tries only, one key (`sharing-tools-v1`). Review dots count right-first-time answers on
+  separate days (gaps 1, 3, 7, 21). Reporting states what it cannot show.
