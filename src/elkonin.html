@@ -19,6 +19,7 @@
     <label class="ctl">Unit <select id="unit"></select></label>
     <div class="seg ctl" role="group" aria-label="Clue on the left" id="mode"></div>
     <label class="ctl"><input type="checkbox" id="tilesOn"> Letter tiles</label>
+    <label class="ctl" title="A 🔊 under each box plays that box's sound (recorded voice)"><input type="checkbox" id="sndOn"> Box sounds</label>
     <span class="grow"></span>
     <button class="btn ctl" id="print" type="button">Print blank</button>
     <span class="lockmark" title="Set from the teacher page">🔒 set by teacher</span>
@@ -33,6 +34,10 @@
 </div>
 <script>
 {{DATA}}
+</script>
+<script>
+/* recorded Australian English sounds from the Phonics repo, base64 mp3 (tools/import-phonemes.py) */
+{{CLIPS}}
 </script>
 <script>
 {{CORE_JS}}
@@ -50,7 +55,41 @@ const cfg = Lock.config(TOOL);
 let unit = unitById(cfg.get('unit')), mode = MODES.find(m => m.id === cfg.get('clue')) || MODES[0];
 let tilesOn = cfg.get('tiles') == null ? mode.tiles : cfg.get('tiles') === '1', cur = null;
 const showOn = cfg.get('show') !== '0';
-const memo = {};   // per unit+mode+word: { vals, tries, state, seen }
+let sndOn = cfg.get('snd') !== '0';
+const memo = {};   // per unit+mode+word: { vals, tries, state, seen, heard }
+
+/* ---- box sounds: the recorded sound for one box, or each box in turn ---- */
+const Clip = (() => {
+  let cur = null, token = 0;
+  function stop() { token++; if (cur) { const a = cur; cur = null; a.pause(); } if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+  function play(id) {
+    return new Promise(res => {
+      if (!CLIPS[id]) { res(); return; }
+      const a = new Audio('data:audio/mpeg;base64,' + CLIPS[id]); cur = a;
+      let done = false; const fin = () => { if (!done) { done = true; clearTimeout(t); res(); } };
+      const t = setTimeout(fin, 4000);
+      a.onended = fin; a.onerror = fin; a.onpause = fin; a.play().catch(fin);
+    });
+  }
+  async function seq(ids, onStep, gap) {
+    stop(); const my = token;
+    for (let i = 0; i < ids.length; i++) {
+      onStep(i); await play(ids[i]);
+      if (my !== token) return;
+      await new Promise(r => setTimeout(r, gap));
+      if (my !== token) return;
+    }
+    onStep(-1);
+  }
+  return { one: (id, onStep) => seq([id], onStep, 0), seq, stop };
+})();
+function lightBox(id, i) { const row = rowEl(id); if (row) $$('.bx', row).forEach((b, k) => b.classList.toggle('hear', k === i)); }
+function hearBox(id, i) { rowMem(id).heard = true; Clip.one(D.words[id].sounds[i], k => lightBox(id, k < 0 ? -1 : i)); }
+function hearAll(id) { rowMem(id).heard = true; Clip.seq(D.words[id].sounds, k => lightBox(id, k), 450); }
+function boxTip(id, i) {
+  const w = D.words[id], g = flat2(id)[i], own = (w.boxTips || {})[i], gen = D.tips[g] || {};
+  return { kind: gen.kind || (own ? 'letter that makes a different sound here' : 'single-letter sound'), tip: own || gen.tip || '' };
+}
 
 const sheet = $('#sheet'), statusEl = $('#status'), tray = $('#tray'), tilesEl = $('#tiles');
 const report = reportDialog(TOOL, 'Sound boxes');
@@ -68,8 +107,7 @@ function clueCell(id, n) {
   if (mode.id === 'word') c.append(h('div', { class: 'ic emo' }, w.icon), h('div', { class: 'en' }, id), h('div', { class: 'cn zh', lang: 'zh-HK' }, w.zh));
   else if (mode.id === 'zh') c.append(h('div', { class: 'ic emo' }, w.icon), h('div', { class: 'cn zh', lang: 'zh-HK' }, w.zh));
   else if (mode.id === 'meaning') c.append(h('div', { class: 'df' }, w.def), h('div', { class: 'cn zh', lang: 'zh-HK' }, w.zh));
-  else c.append(...[h('div', { class: 'num' }, String(n)), speakBtn(id, 'Hear word ' + n)].filter(Boolean));
-  return c;
+  else c.append(...[h('div', { class: 'num' }, String(n)), speakBtn(id, 'Hear word ' + n)].filter(Boolean));  return c;
 }
 
 function buildRow(id, n) {
@@ -96,7 +134,24 @@ function buildRow(id, n) {
     h('button', { class: 'btn pri', type: 'button', onclick: () => check(id) }, 'Check'),
     showOn ? h('button', { class: 'btn', type: 'button', onclick: () => show(id) }, 'Show') : null,
     h('button', { class: 'btn', type: 'button', onclick: () => clearRow(id) }, 'Clear'), lv);
-  const row = h('div', { class: 'row', 'data-id': id }, clueCell(id, n), boxes, acts);
+  const cell = h('div', { class: 'bcell' }, boxes);
+  if (sndOn) {
+    const sbar = h('div', { class: 'sbar', role: 'group', 'aria-label': 'Hear the sounds, row ' + n });
+    let k = 0;
+    w.parts.forEach((part, pi) => {
+      if (pi) sbar.append(h('span', { class: 'gap' }));
+      part.forEach(() => { const idx = k++;
+        sbar.append(h('button', { class: 'sb', type: 'button', 'aria-label': 'Hear sound ' + (idx + 1), title: 'Hear the sound in box ' + (idx + 1),
+          onmousedown: e => e.preventDefault(), onclick: () => { cur = { id, idx }; hearBox(id, idx); } }, '🔊'));
+      });
+    });
+    sbar.append(h('button', { class: 'sb all', type: 'button', title: 'Hear each sound in order',
+      onmousedown: e => e.preventDefault(), onclick: () => hearAll(id) }, '▶ all'));
+    if (mode.id !== 'sound' && Say.canEn()) sbar.append(h('button', { class: 'sb all', type: 'button', title: 'Hear the whole word (computer voice: it can get a sound wrong)',
+      onmousedown: e => e.preventDefault(), onclick: () => { Clip.stop(); Say.en(id); } }, '🔊 word'));
+    cell.append(sbar);
+  }
+  const row = h('div', { class: 'row', 'data-id': id }, clueCell(id, n), cell, acts);
   row.addEventListener('pointerdown', () => setActive(id));
   return row;
 }
@@ -142,14 +197,13 @@ function check(id) {
   mem.tries++;
   mem.marks = okAt.map(v => v ? 'ok' : 'bad');
   const wrong = okAt.map((v, i) => v ? -1 : i).filter(i => i >= 0);
-  const why = wrong.map(i => (D.tips[exp[i]] || {}).kind).filter(Boolean)[0] || (wrong.length ? 'single sound' : '');
-  if (mem.tries === 1 && !mem.seen) recordFirstTry(TOOL, mode.id + ':' + id, all, { unit: unit.id, mode: mode.label, id, why: all ? '' : why });
+  const why = wrong.map(i => boxTip(id, i).kind)[0] || '';
+  if (mem.tries === 1 && !mem.seen) recordFirstTry(TOOL, mode.id + ':' + id, all, Object.assign({ unit: unit.id, mode: mode.label, id, why: all ? '' : why }, mem.heard ? { cue: 'box sounds' } : {}));
   mem.state = all ? 'right' : 'wrong';
   paintMarks(id);
   const parts = w.parts.map(p => p.join(' · ')).join('  /  ');
-  const tipsFor = list => [...new Set(list.map(g => (D.tips[g] || {}).tip).filter(Boolean))];
   if (all) {
-    const t = tipsFor(exp).concat(w.tip ? [w.tip] : []);
+    const t = [...new Set(exp.map((g, i) => boxTip(id, i).tip).filter(Boolean))].concat(w.tip ? [w.tip] : []);
     say('<b>✓ ' + esc(id) + '</b> &nbsp; ' + esc(parts) + (t.length ? '<br><span class="tag">' + t.map(esc).join(' ') + '</span>' : ''));
   } else {
     const empties = wrong.filter(i => !mem.vals[i]).map(i => i + 1);
@@ -161,10 +215,10 @@ function check(id) {
       msg = '<b>Not right: box' + (wrong.length > 1 ? 'es ' : ' ') + wrong.map(i => i + 1).join(', ') + '.</b>';
       if (empties.length) msg += ' Empty: ' + empties.join(', ') + '.';
       if (mem.tries === 1 || !showOn) {          // no Show button = no answer on later tries either
-        const kinds = wrong.filter(i => mem.vals[i]).map(i => 'Box ' + (i + 1) + ' is a ' + ((D.tips[exp[i]] || {}).kind || 'single-letter sound')).filter((v, i, a) => a.indexOf(v) === i);
+        const kinds = wrong.filter(i => mem.vals[i]).map(i => 'Box ' + (i + 1) + ' is a ' + boxTip(id, i).kind).filter((v, i, a) => a.indexOf(v) === i);
         if (kinds.length) msg += ' <span class="tag">' + esc(kinds.join('; ')) + '.</span>';
       } else {
-        const t = wrong.map(i => '<b>' + esc(exp[i]) + '</b> in box ' + (i + 1) + (D.tips[exp[i]] ? ' — ' + esc(D.tips[exp[i]].tip) : '')).join('<br>');
+        const t = wrong.map(i => '<b>' + esc(exp[i]) + '</b> in box ' + (i + 1) + (boxTip(id, i).tip ? ': ' + esc(boxTip(id, i).tip) : '')).join('<br>');
         msg += '<br>' + t + (w.tip && wrong.some(i => i >= 0) ? '<br><span class="tag">' + esc(w.tip) + '</span>' : '');
       }
     }
@@ -203,7 +257,7 @@ function applyTiles() { tray.hidden = !tilesOn; $('#tilesOn').checked = tilesOn;
 
 /* ---- render ---- */
 function render() {
-  Clock.set(TOOL, unit.id);
+  Clock.set(TOOL, unit.id); Clip.stop();
   sheet.replaceChildren(...unit.words.map((id, i) => buildRow(id, i + 1)),
     h('div', { class: 'nav-narrow' },
       h('button', { class: 'btn', type: 'button', onclick: () => step(-1) }, '‹ Back'),
@@ -223,6 +277,8 @@ const modeBox = $('#mode');
 MODES.forEach(m => modeBox.append(h('button', { type: 'button', 'data-m': m.id, 'aria-pressed': String(m.id === mode.id), onclick: () => {
   mode = m; tilesOn = m.tiles; $$('button', modeBox).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m.id))); render();
 } }, m.label)));
+$('#sndOn').checked = sndOn;
+$('#sndOn').addEventListener('change', e => { sndOn = e.target.checked; Clip.stop(); render(); });
 $('#tilesOn').addEventListener('change', e => { tilesOn = e.target.checked; applyTiles(); });
 $('#rep').addEventListener('click', () => report.open());
 $('#print').addEventListener('click', () => { document.body.classList.add('printing-blank'); print(); document.body.classList.remove('printing-blank'); });

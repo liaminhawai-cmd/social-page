@@ -46,7 +46,7 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
 .foot { padding:6px 14px; font-size:.8rem; color:var(--muted); border-top:1px solid var(--line); }
 
 /* the paper sheet, on screen: clue cell | boxes */
-.row { display:grid; grid-template-columns:minmax(220px,280px) 390px auto; gap:14px; align-items:center;
+.row { display:grid; grid-template-columns:minmax(220px,280px) minmax(390px,max-content) auto; gap:14px; align-items:center;
   padding:1px 4px; margin-bottom:1px; border-radius:10px; }
 .row.active { outline:2px solid var(--accent); outline-offset:2px; }
 .clue { background:var(--clue); border-radius:6px; padding:2px 10px; min-height:46px; display:flex;
@@ -70,6 +70,15 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
 .bx.bad .mk { color:var(--bad); }
 .bx.shown input { font-style:italic; border-style:dotted; border-width:3px; }
 .gap { width:22px; flex:none; }
+/* box sounds: a 🔊 under each box, shown on the row being worked on */
+.bcell { display:flex; flex-direction:column; gap:4px; }
+.sbar { display:flex; align-items:center; flex-wrap:wrap; row-gap:4px; }
+.row:not(.active) .sbar { display:none; }
+.sb { width:44px; height:40px; flex:none; padding:0; margin:0 0 0 -2px; border:1px solid var(--line); background:var(--card); border-radius:0 0 8px 8px; font-size:1rem; }
+.sb:first-child { margin-left:0; }
+.sb:hover { border-color:var(--accent); }
+.sb.all { width:auto; margin-left:8px; white-space:nowrap; padding:0 10px; border-radius:8px; font-size:.85rem; font-weight:600; }
+.bx.hear input { background:var(--clue); border-color:var(--accent); border-width:3px; }
 .acts { display:flex; align-items:center; gap:6px; }
 .acts .btn { min-height:36px; padding:4px 10px; font-size:.9rem; }
 .lvl { font-size:.8rem; letter-spacing:1px; color:var(--muted); min-width:56px; text-align:right; }
@@ -115,7 +124,7 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
 @media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
 
 @media print {
-  .bar,.tray,.status,.foot,.acts,.nav-narrow,.veil { display:none !important; }
+  .bar,.tray,.status,.foot,.acts,.nav-narrow,.veil,.sbar { display:none !important; }
   .app { display:block; height:auto; } .region { overflow:visible; }
   body { background:#fff; color:#000; } .row:not(.active) { display:grid !important; }
   .row,.row.active { outline:0; grid-template-columns:240px 1fr; break-inside:avoid; margin-bottom:8px; }

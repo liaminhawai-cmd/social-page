@@ -8,6 +8,9 @@ import json, pathlib, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 data = json.loads((ROOT / 'data' / 'units.json').read_text(encoding='utf-8'))
+# recorded sounds, made by tools/import-phonemes.py from the Phonics repo
+phon = json.loads((ROOT / 'data' / 'phonemes.json').read_text(encoding='utf-8'))
+clips = phon['clips']
 
 def validate(d):
     errs = []
@@ -21,6 +24,16 @@ def validate(d):
         for k in ('zh', 'icon', 'def'):
             if not w.get(k):
                 errs.append(f'{wid}: missing {k}')
+        n = sum(len(p) for p in w['parts'])
+        snd = w.get('sounds')
+        if not snd or len(snd) != n:
+            errs.append(f'{wid}: sounds must list one recorded sound per box ({n} boxes)')
+        for s in snd or []:
+            if s not in clips:
+                errs.append(f'{wid}: no recording for sound "{s}" (see data/phonemes.json)')
+        for k in (w.get('boxTips') or {}):
+            if not k.isdigit() or int(k) >= n:
+                errs.append(f'{wid}: boxTips key {k} is not a box number (0 to {n - 1})')
     for u in d['units']:
         for wid in u['words']:
             if wid not in d['words']:
@@ -53,12 +66,14 @@ printables = sorted(p.name for p in (ROOT / 'printables').glob('*') if p.suffix 
 base_css = (ROOT / 'src' / 'base.css').read_text(encoding='utf-8')
 core_js = (ROOT / 'src' / 'core.js').read_text(encoding='utf-8')
 data_js = 'const D = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';'
+used = sorted({s for w in data['words'].values() for s in w['sounds']})
+clips_js = 'const CLIPS = ' + json.dumps({s: clips[s] for s in used}, separators=(',', ':')) + ';'
 assert '</script' not in data_js and '</script' not in core_js
 
 built = []
 for src in sorted((ROOT / 'src').glob('*.html')):
     html = src.read_text(encoding='utf-8')
-    html = html.replace('{{BASE_CSS}}', base_css).replace('{{CORE_JS}}', core_js).replace('{{DATA}}', data_js).replace('{{PRINTABLES}}', json.dumps(printables))
+    html = html.replace('{{BASE_CSS}}', base_css).replace('{{CORE_JS}}', core_js).replace('{{DATA}}', data_js).replace('{{PRINTABLES}}', json.dumps(printables)).replace('{{CLIPS}}', clips_js)
     (ROOT / src.name).write_text(html, encoding='utf-8')
     built.append(src.name)
 print('built:', ', '.join(built))

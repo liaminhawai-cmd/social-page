@@ -71,6 +71,7 @@ const report = reportDialog(TOOL, 'Rhyming words');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const say = html => statusEl.innerHTML = html;
 const famsOf = u => D.rhymes.filter(r => r.unit === u.id);
+if (!famsOf(unit).length) unit = D.units.find(u => famsOf(u).length);   // a unit with no rhyme sets: open the first that has some
 
 function keyParts(f) {            // boxes of the key word after its starting sound(s)
   const parts = D.words[f.key].parts[0], onsetLen = f.key.length - f.rime.length; let n = 0, i = 0;
@@ -168,7 +169,7 @@ function draw() { applyTiles(); if (task.id === 'make') drawMake(); else drawJud
 function buildFams() {
   famEl.replaceChildren(...famsOf(unit).map(f => h('button', { type: 'button', 'data-f': f.id, 'aria-pressed': 'false', onclick: () => setFam(f.id) }, '-' + f.rime)));
 }
-const unitSel = $('#unit'); D.units.forEach(u => unitSel.append(h('option', { value: u.id }, u.title))); unitSel.value = unit.id;
+const unitSel = $('#unit'); D.units.filter(u => famsOf(u).length).forEach(u => unitSel.append(h('option', { value: u.id }, u.title))); unitSel.value = unit.id;
 unitSel.addEventListener('change', () => { unit = unitById(unitSel.value); buildFams(); setFam(famsOf(unit)[0].id); });
 const taskBox = $('#task');
 TASKS.forEach(t => taskBox.append(h('button', { type: 'button', 'data-t': t.id, 'aria-pressed': String(t.id === task.id), onclick: () => {

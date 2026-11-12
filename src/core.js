@@ -121,11 +121,13 @@ function buildReport(tool, toolLabel, days) {
     const tk = d + '|' + unit, secs = st.secs[d + '|' + tool + '|' + unit] || 0, mins = Math.round(secs / 60);
     const timeLine = timeShown[tk] ? '' : '  time on task that day (all clues): ' + mins + ' min'; timeShown[tk] = 1;
     const u = D.units.find(x => x.id === unit);
+    const cued = es.filter(e => e.cue), cuedRight = cued.filter(e => e.ok).length;
     lines.push('', d + '  ' + (u ? u.title : unit) + (mode ? '  [' + mode + ']' : ''),
       '  first try right: ' + right + ' of ' + es.length + (missed.length ? '' : ''),
       '  missed: ' + (missed.length ? missed.join('; ') : 'none'),
+      ...(cued.length ? ['  box sounds played before the first try: ' + cued.length + ' of ' + es.length + ' words (' + cuedRight + ' of those right)'] : []),
       ...(timeLine ? [timeLine] : []));
-    rows.push([d, u ? u.title : unit, mode || '', right, es.length, missed.join('; '), timeLine ? mins : ''].join('\t'));
+    rows.push([d, u ? u.title : unit, mode || '', right, es.length, missed.join('; '), timeLine ? mins : '', cued.length ? cued.map(e => e.id).join('; ') : ''].join('\t'));
   }
   lines.push('', 'Review dots (●●●○○) count right-first-time answers on separate days, after gaps of 1, 3, 7 and 21 days. Five dots = right first time after a gap of 21 days or more.');
   lines.push('This record cannot show: whether anyone helped, whether the sounds were said aloud, or whether a right answer was understood.');

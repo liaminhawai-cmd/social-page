@@ -38,7 +38,7 @@ pre { background:var(--card); border:1px solid var(--line); border-radius:10px; 
   <div id="units"></div>
 
   <h2>Report — this device</h2>
-  <p class="note">First tries only, last 14 days, from the tools used on this device. Copy rows pastes as one row per day and clue into a spreadsheet.</p>
+  <p class="note">First tries only, last 14 days, from the tools used on this device. Copy rows pastes as one row per day and clue into a spreadsheet. Columns: date, unit, clue, right first time, words tried, missed, minutes, words where the box sounds were played before the first try.</p>
   <div id="reports"></div>
 </div>
 <script>
@@ -61,7 +61,7 @@ function link(tool, params, text) {
 }
 function describe(tool, o) {
   const u = D.units.find(x => x.id === o.unit), parts = [u ? u.title : 'first unit'];
-  if (tool === 'boxes') parts.push(CLUE[o.clue] || 'Word shown', o.tiles === '1' ? 'tiles on' : o.tiles === '0' ? 'tiles off' : '', o.show === '0' ? 'no Show button' : '');
+  if (tool === 'boxes') parts.push(CLUE[o.clue] || 'Word shown', o.tiles === '1' ? 'tiles on' : o.tiles === '0' ? 'tiles off' : '', o.show === '0' ? 'no Show button' : '', o.snd === '0' ? 'box sounds off' : '');
   if (tool === 'match') parts.push('match to ' + (KIND[o.kind] || '中文'));
   if (tool === 'rhyme') parts.push(o.task === 'judge' ? 'Rhyme or not?' : 'Make rhymes', o.tiles === '0' ? 'tiles off' : '', o.show === '0' ? 'no Show the rest' : '');
   return parts.filter(Boolean).join(' · ');
@@ -93,14 +93,16 @@ function unitSection(u, i) {
         link('boxes', { unit: u.id, clue: 'word', tiles: '0' }, 'Word shown, no tiles'),
         link('boxes', { unit: u.id, clue: 'zh', tiles: '0', show: '0' }, 'Chinese + picture only'),
         link('boxes', { unit: u.id, clue: 'meaning', tiles: '0', show: '0' }, 'Meaning + 中文 only'),
-        link('boxes', { unit: u.id, clue: 'sound', tiles: '0', show: '0' }, 'Sound only (dictation)'))),
-      h('div', { class: 'grp' }, h('h3', {}, 'Rhyming words'), h('ul', {},
+        link('boxes', { unit: u.id, clue: 'sound', tiles: '0', show: '0' }, 'Sound only (dictation)'),
+        link('boxes', { unit: u.id, clue: 'sound', tiles: '0', show: '0', snd: '0' }, 'Sound only, no box sounds'))),
+      fams.length ? h('div', { class: 'grp' }, h('h3', {}, 'Rhyming words'), h('ul', {},
         link('rhyme', { unit: u.id, task: 'make', tiles: '1' }, 'Make rhymes, tiles'),
         link('rhyme', { unit: u.id, task: 'make', tiles: '0', show: '0' }, 'Make rhymes, no tiles, no Show'),
         link('rhyme', { unit: u.id, task: 'judge' }, 'Rhyme or not?'),
-        h('li', { class: 'note' }, 'Endings: ' + fams.map(f => '-' + f.rime + ' (' + f.key + ')').join(', ')))),
+        h('li', { class: 'note' }, 'Endings: ' + fams.map(f => '-' + f.rime + ' (' + f.key + ')').join(', ')))) : null,
       h('div', { class: 'grp' }, h('h3', {}, 'Printables'), h('ul', {},
-        ...files.map(f => h('li', {}, h('a', { href: 'printables/' + f, download: '' }, nice(f)))))))];
+        ...(files.length ? files.map(f => h('li', {}, h('a', { href: 'printables/' + f, download: '' }, nice(f))))
+          : [h('li', { class: 'note' }, 'None made for this unit yet.')]))))];
 }
 $('#units').replaceChildren(...D.units.flatMap(unitSection));
 $('#reports').replaceChildren(...Object.entries(TOOLS).flatMap(([t, o]) => {
