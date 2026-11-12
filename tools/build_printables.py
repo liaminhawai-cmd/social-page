@@ -107,11 +107,14 @@ def rhyme(u):
     return doc
 
 if __name__ == '__main__':
-    n = 0
+    # optional unit ids:  build_printables.py sad-1 sad-2   (default: every unit)
+    only = set(sys.argv[1:]); n = 0
     for i, u in enumerate(D['units'], 1):
+        if only and u['id'] not in only: continue
         base = f'U{i}'
         for mode, name in (('A', '1-boxes-word-and-chinese'), ('B', '2-boxes-meaning-and-chinese'), ('C', '3-boxes-only')):
             sheet(u, mode).save(OUT / f'{base}_{name}.docx'); n += 1
         cards(u).save(OUT / f'{base}_match-cards.docx'); n += 1
-        rhyme(u).save(OUT / f'{base}_rhyme-sheets.docx'); n += 1
+        if any(f['unit'] == u['id'] for f in D['rhymes']):          # a unit with no rhyme sets gets no rhyme sheet
+            rhyme(u).save(OUT / f'{base}_rhyme-sheets.docx'); n += 1
     print('wrote', n, 'files to', OUT)

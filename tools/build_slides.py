@@ -128,6 +128,9 @@ def deck(u):
     return prs
 
 if __name__ == '__main__':
+    # optional unit ids:  build_slides.py sad-1 sad-2   (default: every unit)
+    only = set(sys.argv[1:]); n = 0
     for i, u in enumerate(D['units'], 1):
-        deck(u).save(OUT / f'U{i}_drag-and-drop-slides.pptx')
-    print('wrote', len(D['units']), 'decks to', OUT)
+        if only and u['id'] not in only: continue
+        deck(u).save(OUT / f'U{i}_drag-and-drop-slides.pptx'); n += 1
+    print('wrote', n, 'decks to', OUT)

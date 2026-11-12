@@ -17,7 +17,7 @@ a second book on being kind, and *My Friend Is Sad* by Mo Willems). No book text
 
 ## Editing
 
-`data/units.json` holds every word, its boxes, Chinese, picture (emoji), short meaning, and the rhyme families. Each word lists one recorded sound per box (`sounds`), and `boxTips` gives the rule for a box whose letter makes an unusual sound in that word (the o in *to*). Names and calls from the books (gerald, piggie, yee, haw, ohhh, um) are left out, and so are *i* (one box) and *anyone* (the o in one is two sounds, /w/ + /u/).
+`data/units.json` holds every word, its boxes, Chinese, picture (emoji), short meaning, and the rhyme families. Each word lists one recorded sound per box (`sounds`), and `boxTips` gives the rule for a box whose letter makes an unusual sound in that word (the o in *to*). Unit 6 has the book's names and calls (gerald, piggie, i, um, yee, haw). Left out: the author's name, *ohhh*, and *anyone* (the o in one is two sounds, /w/ + /u/, so it cannot take one box).
 
 `data/phonemes.json` is generated: the human recordings of each sound, copied as base64 from the Phonics repo (`recordings/au/phonemes`) so the page needs no network and the repo holds no audio files. Re-run `python3 tools/import-phonemes.py` after a recording changes there.
 
@@ -29,7 +29,7 @@ PUBLIC_DENY="a,b" python3 tools/check-public.py   # before every push — see AG
 
 The generated `.html` files are committed so GitHub Pages can serve them directly (Settings → Pages → Deploy from
 branch → `main` / root). Do not edit them by hand. Printables need `python-docx`, `python-pptx` and `Pillow`;
-the pictures are emoji drawn from Noto Color Emoji.
+the pictures are emoji drawn from Noto Color Emoji on Linux, Segoe UI Emoji on Windows (so units 1 to 2 and units 3 to 8 look slightly different). Add unit ids to build only those: `python3 tools/build_printables.py sad-1 sad-2`, and the same for `build_slides.py`.
 
 ## Privacy
 

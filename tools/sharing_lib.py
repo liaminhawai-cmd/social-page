@@ -9,7 +9,8 @@ from docx.oxml import OxmlElement
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 D = json.loads((ROOT / 'data' / 'units.json').read_text(encoding='utf-8'))
-EMOJI_FONT = '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf'
+# Noto Color Emoji where it exists (Linux); otherwise Segoe UI Emoji (Windows). Both render in colour.
+EMOJI_FONT = next((f for f in ('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf', 'C:/Windows/Fonts/seguiemj.ttf') if pathlib.Path(f).exists()), None)
 CACHE = pathlib.Path(__file__).resolve().parent / '_icons'
 EN_FONT, ZH_FONT = 'Arial', 'Microsoft JhengHei'
 GREEN, GREY = 'E9EFDC', 'D9D9D9'     # the pale green / grey from the hand-made sheets

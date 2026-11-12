@@ -29,7 +29,8 @@
     "aw": {"kind": "2-letter sound", "tip": "aw says /or/ in saw. Two letters, one sound."},
     "au": {"kind": "2-letter sound", "tip": "au: two letters, one sound."},
     "ore": {"kind": "3-letter sound", "tip": "ore: three letters make the /or/ sound in more. One box."},
-    "ere": {"kind": "3-letter sound", "tip": "ere: three letters, one sound. It says something different in here, there and were."}
+    "ere": {"kind": "3-letter sound", "tip": "ere: three letters, one sound. It says something different in here, there and were."},
+    "gg": {"kind": "2-letter sound", "tip": "gg: two letters, one /g/ sound."}
   },
   "words": {
     "pig":       {"zh": "豬",   "icon": "🐷", "def": "A pink farm animal.",                          "parts": [["p","i","g"]], "sounds": ["p", "i", "g"]},
@@ -143,7 +144,16 @@
     "wanted":    {"zh": "想要（以前）", "icon": "🤲", "def": "Want, in the past: I wanted to help.", "parts": [["w","a","n"],["t","e","d"]], "sounds": ["w","o","n","t","schwa","d"],
                   "boxTips": {"1": "a says /o/ after w: was, want, wash.", "4": "e says /uh/ in -ted: want | ed."}},
     "glasses":   {"zh": "眼鏡", "icon": "👓", "def": "You wear them on your eyes to see better.", "parts": [["g","l","a","ss"],["e","s"]], "sounds": ["g","l","ar","s","schwa","z"],
-                  "boxTips": {"2": "a says /ar/ in glasses (Australian English).", "4": "e says /uh/ in -es.", "5": "s says /z/ at the end of glasses."}}
+                  "boxTips": {"2": "a says /ar/ in glasses (Australian English).", "4": "e says /uh/ in -es.", "5": "s says /z/ at the end of glasses."}},
+    "gerald":    {"zh": "傑拉德（大象）", "icon": "🐘", "def": "The elephant's name. A name starts with a capital: Gerald.", "parts": [["g","e","r"],["a","l","d"]], "sounds": ["j","e","r","schwa","l","d"],
+                  "boxTips": {"0": "g says /j/ in Gerald (g before e can be soft, as in gem).", "3": "a says /uh/ in -ald."}},
+    "piggie":    {"zh": "小豬（豬仔的名）", "icon": "🐷", "def": "The pig's name. A name starts with a capital: Piggie.", "parts": [["p","i","gg"],["ie"]], "sounds": ["p","i","g","ee"],
+                  "boxTips": {"3": "ie says /ee/ at the end of piggie. In friend it says /e/."}},
+    "yee":       {"zh": "牛仔叫聲（前半）", "icon": "🤠", "def": "The first half of a cowboy shout: yee-haw!", "parts": [["y","ee"]], "sounds": ["y","ee"]},
+    "haw":       {"zh": "牛仔叫聲（後半）", "icon": "🐴", "def": "The second half of a cowboy shout: yee-haw!", "parts": [["h","aw"]], "sounds": ["h","or"]},
+    "um":        {"zh": "呃", "icon": "🤔", "def": "A sound you make when you are thinking.", "parts": [["u","m"]], "sounds": ["u","m"]},
+    "i":         {"zh": "我", "icon": "👤", "def": "Me. I is always a capital letter: I am happy.", "parts": [["i"]], "sounds": ["igh"],
+                  "boxTips": {"0": "i on its own says its name /igh/, and it is always a capital: I."}}
   },
   "units": [
     {"id": "share-1", "title": "Sharing 1: ice cream", "zh": "分享 1：雪糕",
@@ -159,7 +169,9 @@
     {"id": "sad-4", "title": "My friend is sad 4: long sounds", "zh": "朋友唔開心 4：長音",
      "words": ["he","me","be","see","need","my","by","so","now","how","saw","new","more"]},
     {"id": "sad-5", "title": "My friend is sad 5: tricky words", "zh": "朋友唔開心 5：難串的字",
-     "words": ["are","was","were","there","here","you","do","to","because","around","wanted","glasses"]}
+     "words": ["are","was","were","there","here","you","do","to","because","around","wanted","glasses"]},
+    {"id": "sad-6", "title": "My friend is sad 6: names and calls", "zh": "朋友唔開心 6：名字同叫聲",
+     "words": ["gerald","piggie","i","um","yee","haw"]}
   ],
   "rhymes": [
     {"id": "ig", "unit": "share-1", "rime": "ig", "key": "pig",
@@ -225,6 +237,10 @@
     {"id": "ee", "unit": "sad-4", "rime": "ee", "key": "see",
      "words": ["see", "bee", "tree", "free", "three", "knee"],
      "gloss": {"see": "見", "bee": "蜜蜂", "tree": "樹", "free": "免費", "three": "三", "knee": "膝頭"},
-     "near":  [{"w":"say","rime":"ay"},{"w":"seed","rime":"eed"},{"w":"sigh","rime":"igh"},{"w":"saw","rime":"aw"}]}
+     "near":  [{"w":"say","rime":"ay"},{"w":"seed","rime":"eed"},{"w":"sigh","rime":"igh"},{"w":"saw","rime":"aw"}]},
+    {"id": "aw", "unit": "sad-6", "rime": "aw", "key": "haw",
+     "words": ["haw", "saw", "paw", "jaw", "raw", "claw", "draw", "straw"],
+     "gloss": {"haw": "牛仔叫聲", "saw": "見到", "paw": "腳掌", "jaw": "下巴", "raw": "生", "claw": "爪", "draw": "畫", "straw": "飲管"},
+     "near":  [{"w":"hay","rime":"ay"},{"w":"how","rime":"ow"},{"w":"hat","rime":"at"},{"w":"jar","rime":"ar"}]}
   ]
 }
