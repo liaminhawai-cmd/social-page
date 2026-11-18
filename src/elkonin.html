@@ -52,6 +52,7 @@ const MODES = [
   { id: 'sound',   label: 'Sound only',   tiles: false }
 ];
 const cfg = Lock.config(TOOL);
+if (cfg.locked) Focus.start();      // pinned from the teacher page: keep it in full screen
 let unit = unitById(cfg.get('unit')), mode = MODES.find(m => m.id === cfg.get('clue')) || MODES[0];
 let tilesOn = cfg.get('tiles') == null ? mode.tiles : cfg.get('tiles') === '1', cur = null;
 const showOn = cfg.get('show') !== '0';
@@ -59,33 +60,86 @@ let sndOn = cfg.get('snd') !== '0';
 const memo = {};   // per unit+mode+word: { vals, tries, state, seen, heard }
 
 /* ---- box sounds: the recorded sound for one box, or each box in turn ---- */
+/* Some recordings start with 0.3 to 0.4 s of silence and are a fifth as loud as the rest (s, n, v, y,
+   /dh/, /yoo/; the /uh/ clip peaks at 0.05). Played as they are, the sound arrives late and is easy to
+   miss inside a word. So each clip is decoded once, the silence before and after is cut, and it is
+   turned up to the same loudness as the others. Without Web Audio the file plays as it is. */
 const Clip = (() => {
-  let cur = null, token = 0;
-  function stop() { token++; if (cur) { const a = cur; cur = null; a.pause(); } if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let ctx = null, cur = null, token = 0; const ready = {};
+  function prep(id) {
+    if (ready[id]) return ready[id];
+    const bytes = Uint8Array.from(atob(CLIPS[id]), c => c.charCodeAt(0));
+    return ready[id] = new Promise((ok, no) => ctx.decodeAudioData(bytes.buffer, ok, no)).then(buf => {
+      const d = buf.getChannelData(0), win = Math.round(buf.sampleRate * 0.01), env = [];
+      for (let i = 0; i < d.length; i += win) { let s = 0; for (let j = i; j < Math.min(i + win, d.length); j++) s += d[j] * d[j]; env.push(Math.sqrt(s / win)); }
+      const thr = Math.max(...env) * 0.1, first = env.findIndex(v => v > thr), last = env.length - 1 - [...env].reverse().findIndex(v => v > thr);
+      const from = Math.max(0, first - 2) / 100, to = Math.min(env.length, last + 5) / 100;
+      let peak = 0; for (let i = Math.floor(from * buf.sampleRate); i < Math.min(d.length, to * buf.sampleRate); i++) peak = Math.max(peak, Math.abs(d[i]));
+      return { buf, from, len: to - from, gain: Math.min(12, 0.8 / (peak || 1)) };
+    });
+  }
+  function stop() {
+    token++;
+    if (cur) { const a = cur; cur = null; try { a.onended = null; a.stop ? a.stop() : a.pause(); } catch (e) {} if (a._fin) a._fin(); }
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+  }
+  function playFile(id, res) {
+    const a = new Audio('data:audio/mpeg;base64,' + CLIPS[id]); cur = a;
+    let done = false; const fin = a._fin = () => { if (!done) { done = true; clearTimeout(t); res(); } };
+    const t = setTimeout(fin, 4000);
+    a.onended = fin; a.onerror = fin; a.onpause = fin; a.play().catch(fin);
+  }
   function play(id) {
     return new Promise(res => {
       if (!CLIPS[id]) { res(); return; }
-      const a = new Audio('data:audio/mpeg;base64,' + CLIPS[id]); cur = a;
-      let done = false; const fin = () => { if (!done) { done = true; clearTimeout(t); res(); } };
-      const t = setTimeout(fin, 4000);
-      a.onended = fin; a.onerror = fin; a.onpause = fin; a.play().catch(fin);
+      if (!AC) { playFile(id, res); return; }
+      if (!ctx) ctx = new AC();
+      if (ctx.state === 'suspended') ctx.resume();
+      const my = token;
+      prep(id).then(c => {
+        if (my !== token) { res(); return; }
+        const src = ctx.createBufferSource(), g = ctx.createGain();
+        src.buffer = c.buf; g.gain.value = c.gain; src.connect(g).connect(ctx.destination);
+        let done = false; const fin = src._fin = () => { if (!done) { done = true; clearTimeout(t); res(); } };
+        const t = setTimeout(fin, (c.len + 1) * 1000);
+        src.onended = fin; cur = src; src.start(0, c.from, c.len);
+      }, () => playFile(id, res));
     });
   }
   async function seq(ids, onStep, gap) {
     stop(); const my = token;
     for (let i = 0; i < ids.length; i++) {
       onStep(i); await play(ids[i]);
-      if (my !== token) return;
-      await new Promise(r => setTimeout(r, gap));
-      if (my !== token) return;
+      if (my !== token) return false;
+      if (gap) await new Promise(r => setTimeout(r, gap));
+      if (my !== token) return false;
     }
-    onStep(-1);
+    onStep(-1); return true;
   }
-  return { one: (id, onStep) => seq([id], onStep, 0), seq, stop };
+  return { one: (id, onStep) => seq([id], onStep, 0), seq, stop, live: () => token };
 })();
-function lightBox(id, i) { const row = rowEl(id); if (row) $$('.bx', row).forEach((b, k) => b.classList.toggle('hear', k === i)); }
+function lightBox(id, i) { const row = rowEl(id); if (row) $$('.bx', row).forEach((b, k) => b.classList.toggle('hear', i === 'all' || k === i)); }
 function hearBox(id, i) { rowMem(id).heard = true; Clip.one(D.words[id].sounds[i], k => lightBox(id, k < 0 ? -1 : i)); }
-function hearAll(id) { rowMem(id).heard = true; Clip.seq(D.words[id].sounds, k => lightBox(id, k), 450); }
+/* sound it out, then blend: each box's sound in turn, then the whole word with every box lit */
+async function hearAll(id) {
+  rowMem(id).heard = true;
+  if (!await Clip.seq(D.words[id].sounds, k => lightBox(id, k), 300)) return;
+  if (!Say.canEn()) return;
+  const my = Clip.live(); await new Promise(r => setTimeout(r, 350)); if (my !== Clip.live()) return;
+  lightBox(id, 'all'); Say.en(id); setTimeout(() => { if (my === Clip.live()) lightBox(id, -1); }, 1200);
+}
+/* a tile says the sound its letters usually make. It is the same sound whichever word is being built,
+   so tapping tiles cannot tell the child which one is right. Spellings with no usual sound in these
+   words (oo: book or cool; ere: here, there, were) stay silent. */
+const LETTER = { a: 'a', b: 'b', c: 'k', d: 'd', e: 'e', f: 'f', g: 'g', h: 'h', i: 'i', j: 'j', k: 'k', l: 'l', m: 'm', n: 'n', o: 'o', p: 'p', r: 'r', s: 's', t: 't', u: 'u', v: 'v', w: 'w', y: 'y', z: 'z' };
+const TILE_SOUND = (() => {
+  const seen = {};
+  for (const w of Object.values(D.words)) w.parts.flat().forEach((g, i) => { if (g.length > 1) { const s = (seen[g] = seen[g] || {}); s[w.sounds[i]] = (s[w.sounds[i]] || 0) + 1; } });
+  const out = Object.assign({}, LETTER);
+  for (const [g, s] of Object.entries(seen)) { const r = Object.entries(s).sort((a, b) => b[1] - a[1]); if (!r[1] || r[0][1] > r[1][1]) out[g] = r[0][0]; }
+  return out;
+})();
 function boxTip(id, i) {
   const w = D.words[id], g = flat2(id)[i], own = (w.boxTips || {})[i], gen = D.tips[g] || {};
   return { kind: gen.kind || (own ? 'letter that makes a different sound here' : 'single-letter sound'), tip: own || gen.tip || '' };
@@ -249,6 +303,7 @@ function buildTiles() {
       const ins = inputs(cur.id), mem = rowMem(cur.id); if (!ins.length) return;
       const i = Math.min(cur.idx, ins.length - 1); ins[i].value = g; mem.vals[i] = g; mem.marks[i] = ''; paintMarks(cur.id);
       const nx = i + 1 < ins.length ? i + 1 : i; cur.idx = nx; ins[nx].focus({ preventScroll: true });
+      if (sndOn && TILE_SOUND[g]) Clip.one(TILE_SOUND[g], () => {});
     });
     return b;
   }));

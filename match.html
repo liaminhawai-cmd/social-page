@@ -143,6 +143,18 @@ main { flex:1; min-height:0; display:flex; flex-direction:column; }
   .printing-blank .bx { } .printing-blank .bx.ok input,.printing-blank .bx.bad input,.printing-blank .bx.shown input { border:2px solid #111; font-style:normal; }
 }
 
+/* full screen guard on pinned tools: red when she leaves full screen, green tick when she comes back */
+.fsv { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
+.fsv[hidden] { display:none; }
+.fsv.start { background:var(--bg); color:var(--ink); }
+.fsv.red { background:#b3261e; color:#fff; }
+.fsv.green { background:#1f6b32; color:#fff; }
+.fsbox { text-align:center; max-width:560px; }
+.fsg { font-size:5rem; line-height:1.1; font-weight:700; }
+.fst { font-size:1.7rem; font-weight:700; margin:12px 0 20px; }
+.fsv .fsb { font-size:1.25rem; min-height:56px; padding:10px 28px; }
+.fsv.red .fsb { background:#fff; color:#7a1712; border-color:#fff; }
+
 .cols { display:grid; grid-template-columns:1fr 1fr; gap:10px 28px; max-width:900px; margin:0 auto; }
 .col { display:flex; flex-direction:column; gap:8px; }
 .col h2 { margin:0; font-size:.85rem; color:var(--muted); font-weight:600; }
@@ -313,6 +325,8 @@ function buildReport(tool, toolLabel, days) {
       ...(timeLine ? [timeLine] : []));
     rows.push([d, u ? u.title : unit, mode || '', right, es.length, missed.join('; '), timeLine ? mins : '', cued.length ? cued.map(e => e.id).join('; ') : ''].join('\t'));
   }
+  const leaves = Object.entries(st.fsLeaves || {}).filter(([d]) => today - dayNum(d) < days).sort().reverse();
+  if (leaves.length) lines.push('', 'Left full screen (all pinned tools on this device): ' + leaves.map(([d, n]) => d + ' ' + n + (n === 1 ? ' time' : ' times')).join('; '));
   lines.push('', 'Review dots (●●●○○) count right-first-time answers on separate days, after gaps of 1, 3, 7 and 21 days. Five dots = right first time after a gap of 21 days or more.');
   lines.push('This record cannot show: whether anyone helped, whether the sounds were said aloud, or whether a right answer was understood.');
   return { text: lines.join('\n'), tsv: rows.join('\n') };
@@ -362,12 +376,60 @@ const Lock = (() => {
   return { config, all: read, clear(tool) { const a = read(); if (tool) delete a[tool]; else Object.keys(a).forEach(k => delete a[k]); write(a); } };
 })();
 
+/* ---- full screen on a pinned tool. The first tap asks for full screen. Leaving it (Esc, F11, another
+   tab) covers the tool in red until the child goes back; going back shows a green tick for a moment.
+   F11 full screen counts too: the window filling the screen is checked, not only the Fullscreen API.
+   Each leave is counted per day on this device and shown in the report. ---- */
+const Focus = (() => {
+  const root = document.documentElement;
+  const apiOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const winOn = () => innerWidth >= screen.width - 4 && innerHeight >= screen.height - 4;
+  const isFull = () => apiOn() || winOn();
+  const can = () => !!(root.requestFullscreen || root.webkitRequestFullscreen);
+  let armed = false, was = false, veil, glyph, txt, btn, okT = 0;
+  function req() {
+    const f = root.requestFullscreen || root.webkitRequestFullscreen;
+    try { const p = f.call(root); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  }
+  function show(kind, g, t, withBtn, label) {
+    clearTimeout(okT);
+    veil.className = 'fsv ' + kind; glyph.textContent = g; txt.textContent = t;
+    btn.hidden = !withBtn; btn.textContent = label || 'Full screen'; veil.hidden = false; if (withBtn) btn.focus();
+  }
+  function logLeave() {
+    const st = Store.get(), k = dayKey(); st.fsLeaves = st.fsLeaves || {}; st.fsLeaves[k] = (st.fsLeaves[k] || 0) + 1; Store.save();
+  }
+  function check() {
+    if (!armed) return;
+    const f = isFull();
+    if (f && !was) {
+      was = true;
+      if (!veil.hidden && veil.classList.contains('red')) { show('green', '✓ 😊', 'Back in full screen.', false); okT = setTimeout(() => veil.hidden = true, 1500); }
+      else veil.hidden = true;
+    } else if (!f && was) { was = false; logLeave(); show('red', '✗', 'Full screen, please.', true, 'Back to full screen'); }
+  }
+  function start() {
+    if (armed || !can()) return;
+    armed = true;
+    glyph = h('div', { class: 'fsg emo', 'aria-hidden': 'true' }); txt = h('p', { class: 'fst' });
+    btn = h('button', { class: 'btn pri fsb', type: 'button', onclick: req }, 'Full screen');
+    veil = h('div', { class: 'fsv', hidden: true, role: 'alertdialog', 'aria-modal': 'true', 'aria-live': 'assertive' }, h('div', { class: 'fsbox' }, glyph, txt, btn));
+    document.body.append(veil);
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, check));
+    addEventListener('resize', () => setTimeout(check, 150));
+    was = isFull();
+    if (!was) show('start', '⛶', 'Tap to start in full screen.', true);
+  }
+  return { start };
+})();
+
 </script>
 <script>
 'use strict';
 const TOOL = 'match';
 const KINDS = [{ id: 'zh', label: '中文' }, { id: 'pic', label: 'Picture' }, { id: 'def', label: 'Meaning' }];
 const qs = Lock.config(TOOL);
+if (qs.locked) Focus.start();      // pinned from the teacher page: keep it in full screen
 let unit = unitById(qs.get('unit')), kind = KINDS.find(k => k.id === qs.get('kind')) || KINDS[0];
 let roundNo = 0, round = [], left = [], right = [], sel = null, done = {}, tried = {};
 const colsEl = $('#cols'), statusEl = $('#status'), report = reportDialog(TOOL, 'Match words');

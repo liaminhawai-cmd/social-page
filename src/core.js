@@ -129,6 +129,8 @@ function buildReport(tool, toolLabel, days) {
       ...(timeLine ? [timeLine] : []));
     rows.push([d, u ? u.title : unit, mode || '', right, es.length, missed.join('; '), timeLine ? mins : '', cued.length ? cued.map(e => e.id).join('; ') : ''].join('\t'));
   }
+  const leaves = Object.entries(st.fsLeaves || {}).filter(([d]) => today - dayNum(d) < days).sort().reverse();
+  if (leaves.length) lines.push('', 'Left full screen (all pinned tools on this device): ' + leaves.map(([d, n]) => d + ' ' + n + (n === 1 ? ' time' : ' times')).join('; '));
   lines.push('', 'Review dots (●●●○○) count right-first-time answers on separate days, after gaps of 1, 3, 7 and 21 days. Five dots = right first time after a gap of 21 days or more.');
   lines.push('This record cannot show: whether anyone helped, whether the sounds were said aloud, or whether a right answer was understood.');
   return { text: lines.join('\n'), tsv: rows.join('\n') };
@@ -176,4 +178,51 @@ const Lock = (() => {
     return { locked: false, get: k => p.get(k) };
   }
   return { config, all: read, clear(tool) { const a = read(); if (tool) delete a[tool]; else Object.keys(a).forEach(k => delete a[k]); write(a); } };
+})();
+
+/* ---- full screen on a pinned tool. The first tap asks for full screen. Leaving it (Esc, F11, another
+   tab) covers the tool in red until the child goes back; going back shows a green tick for a moment.
+   F11 full screen counts too: the window filling the screen is checked, not only the Fullscreen API.
+   Each leave is counted per day on this device and shown in the report. ---- */
+const Focus = (() => {
+  const root = document.documentElement;
+  const apiOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const winOn = () => innerWidth >= screen.width - 4 && innerHeight >= screen.height - 4;
+  const isFull = () => apiOn() || winOn();
+  const can = () => !!(root.requestFullscreen || root.webkitRequestFullscreen);
+  let armed = false, was = false, veil, glyph, txt, btn, okT = 0;
+  function req() {
+    const f = root.requestFullscreen || root.webkitRequestFullscreen;
+    try { const p = f.call(root); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  }
+  function show(kind, g, t, withBtn, label) {
+    clearTimeout(okT);
+    veil.className = 'fsv ' + kind; glyph.textContent = g; txt.textContent = t;
+    btn.hidden = !withBtn; btn.textContent = label || 'Full screen'; veil.hidden = false; if (withBtn) btn.focus();
+  }
+  function logLeave() {
+    const st = Store.get(), k = dayKey(); st.fsLeaves = st.fsLeaves || {}; st.fsLeaves[k] = (st.fsLeaves[k] || 0) + 1; Store.save();
+  }
+  function check() {
+    if (!armed) return;
+    const f = isFull();
+    if (f && !was) {
+      was = true;
+      if (!veil.hidden && veil.classList.contains('red')) { show('green', '✓ 😊', 'Back in full screen.', false); okT = setTimeout(() => veil.hidden = true, 1500); }
+      else veil.hidden = true;
+    } else if (!f && was) { was = false; logLeave(); show('red', '✗', 'Full screen, please.', true, 'Back to full screen'); }
+  }
+  function start() {
+    if (armed || !can()) return;
+    armed = true;
+    glyph = h('div', { class: 'fsg emo', 'aria-hidden': 'true' }); txt = h('p', { class: 'fst' });
+    btn = h('button', { class: 'btn pri fsb', type: 'button', onclick: req }, 'Full screen');
+    veil = h('div', { class: 'fsv', hidden: true, role: 'alertdialog', 'aria-modal': 'true', 'aria-live': 'assertive' }, h('div', { class: 'fsbox' }, glyph, txt, btn));
+    document.body.append(veil);
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, check));
+    addEventListener('resize', () => setTimeout(check, 150));
+    was = isFull();
+    if (!was) show('start', '⛶', 'Tap to start in full screen.', true);
+  }
+  return { start };
 })();

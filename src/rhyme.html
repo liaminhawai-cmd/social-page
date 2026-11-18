@@ -63,6 +63,7 @@
 const TOOL = 'rhyme';
 const TASKS = [{ id: 'make', label: 'Make rhymes' }, { id: 'judge', label: 'Rhyme or not?' }];
 const qs = Lock.config(TOOL);
+if (qs.locked) Focus.start();      // pinned from the teacher page: keep it in full screen
 let unit = unitById(qs.get('unit')), task = TASKS.find(t => t.id === qs.get('task')) || TASKS[0], fam = null, tilesOn = qs.get('tiles') !== '0';
 const showOn = qs.get('show') !== '0';
 let found = [], shownAll = false, tried = {}, quiz = [];
