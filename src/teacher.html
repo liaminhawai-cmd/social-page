@@ -51,7 +51,7 @@ const PRINTABLES = {{PRINTABLES}};
 </script>
 <script>
 'use strict';
-const TOOLS = { boxes: { page: 'elkonin.html', label: 'Sound boxes' }, match: { page: 'match.html', label: 'Match words' }, rhyme: { page: 'rhyme.html', label: 'Rhyming words' } };
+const TOOLS = { boxes: { page: 'elkonin.html', label: 'Sound boxes' }, match: { page: 'match.html', label: 'Match words' }, rhyme: { page: 'rhyme.html', label: 'Rhyming words' }, sort: { page: 'sort.html', label: 'Sort rhymes' } };
 const CLUE = { word: 'Word shown', zh: 'Chinese only', meaning: 'Meaning + 中文', sound: 'Sound only' };
 const KIND = { zh: '中文', pic: 'Picture', def: 'Meaning' };
 function link(tool, params, text) {
@@ -61,6 +61,7 @@ function link(tool, params, text) {
   return h('li', {}, h('a', { href, target: '_blank', rel: 'noopener' }, text), cp);
 }
 function describe(tool, o) {
+  if (tool === 'sort') { const b = D.books.find(x => x.id === o.book) || D.books[0]; return [b.title, (o.n === '3' ? 3 : 2) + ' words per ending', o.near === '0' ? 'no near-misses' : 'near-misses'].join(' · '); }
   const u = D.units.find(x => x.id === o.unit), parts = [u ? u.title : 'first unit'];
   if (tool === 'boxes') parts.push(CLUE[o.clue] || 'Word shown', o.tiles === '1' ? 'tiles on' : o.tiles === '0' ? 'tiles off' : '', o.show === '0' ? 'no Show button' : '', o.snd === '0' ? 'box sounds off' : '');
   if (tool === 'match') parts.push('match to ' + (KIND[o.kind] || '中文'));
@@ -72,6 +73,14 @@ function drawLocks() {
   box.replaceChildren(...(keys.length ? keys.map(t => h('div', { class: 'lk' }, h('b', {}, (TOOLS[t] || { label: t }).label + ':'), h('code', {}, describe(t, all[t])),
       h('button', { class: 'btn', type: 'button', onclick: () => { Lock.clear(t); drawLocks(); } }, 'Unlock'))) : [h('p', { class: 'note' }, 'Nothing is pinned on this device.')]),
     keys.length > 1 ? h('button', { class: 'btn', type: 'button', onclick: () => { Lock.clear(); drawLocks(); } }, 'Unlock all') : '');
+}
+function sortSection() {
+  return [h('h2', {}, 'Sort rhymes (drag and drop)'),
+    h('p', { class: 'note' }, 'Three key words, each with two or three of its rhymes in a word bank. The child drags every word under the key word it rhymes with, then presses Check. Near-misses (words that start the same or share a last letter) belong to no key word and stay in the bank. A word wrong on two Checks is moved to its place and counted as missed. The Report shows how many times Check was pressed. All three books takes one ending from each book.'),
+    h('div', { class: 'grid' }, ...D.books.map(b => h('div', { class: 'grp' }, h('h3', {}, b.title), h('ul', {},
+      link('sort', { book: b.id, n: '2' }, '2 words per ending, near-misses'),
+      link('sort', { book: b.id, n: '3' }, '3 words per ending, near-misses'),
+      link('sort', { book: b.id, n: '2', near: '0' }, '2 words per ending, no near-misses')))))];
 }
 function unitSection(u, i) {
   const fams = D.rhymes.filter(r => r.unit === u.id);
@@ -105,7 +114,7 @@ function unitSection(u, i) {
         ...(files.length ? files.map(f => h('li', {}, h('a', { href: 'printables/' + f, download: '' }, nice(f))))
           : [h('li', { class: 'note' }, 'None made for this unit yet.')]))))];
 }
-$('#units').replaceChildren(...D.units.flatMap(unitSection));
+$('#units').replaceChildren(...sortSection(), ...D.units.flatMap(unitSection));
 $('#reports').replaceChildren(...Object.entries(TOOLS).flatMap(([t, o]) => {
   const r = buildReport(t, o.label, 14), msg = h('span', { class: 'note' });
   return [h('pre', {}, r.text), h('div', { class: 'lk' },

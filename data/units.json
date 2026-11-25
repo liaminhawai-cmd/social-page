@@ -155,6 +155,12 @@
     "i":         {"zh": "我", "icon": "👤", "def": "Me. I is always a capital letter: I am happy.", "parts": [["i"]], "sounds": ["igh"],
                   "boxTips": {"0": "i on its own says its name /igh/, and it is always a capital: I."}}
   },
+  "books": [
+    {"id": "all", "title": "All three books", "mix": true, "units": []},
+    {"id": "ice", "title": "Ice cream", "units": ["share-1"]},
+    {"id": "kind", "title": "Being kind", "units": ["share-2"]},
+    {"id": "sad", "title": "My friend is sad", "units": ["sad-1","sad-2","sad-3","sad-4","sad-5","sad-6"]}
+  ],
   "units": [
     {"id": "share-1", "title": "Sharing 1: ice cream", "zh": "分享 1：雪糕",
      "words": ["pig","sad","hot","give","wait","cold","share","friend","ice cream","elephant"]},

@@ -10,6 +10,7 @@ alongside. Word lists from picture books about sharing, being kind and cheering 
 | `elkonin.html` | **sound boxes**: one box for each sound. Clue on the left: *word shown*, *Chinese only*, *meaning*, or *sound only*. Letter tiles can be switched off. **Box sounds**: a 🔊 under each box plays the recorded sound for that box, and ▶ all plays them in order, lighting each box; switch off for a dictation without help. Check, Show, Clear. Print blank sheet. Report |
 | `teacher.html` | not linked from the start page. One link per activity and clue, each **pinning** the tool on that device (the child can't switch English back on) until unlocked here; all printables; this device's report |
 | `printables/` | per unit: sound-box sheets (word + 中文 to fold under; meaning + 中文; boxes only), match cards, rhyme sheets, drag-and-drop slides — editable Word / PowerPoint |
+| `sort.html` | **sort rhymes** (drag and drop): three key words, a word bank, drag each word under its rhyme, then Check. Near-misses stay in the bank. Wrong twice: the word is moved and counted as missed. Book: all three books (one ending from each) or one book. Tap a word then a group, or keys 1 2 3 and B, also work |
 | `rhyme.html` | **make rhymes** (keep the ending, change the start; many right answers) and **rhyme or not?** (with near-misses that start the same or share a last letter) |
 
 Words come from the vocabulary of two picture books about sharing (*Should I Share My Ice Cream?* by Mo Willems,

@@ -57,6 +57,9 @@ function recordFirstTry(tool, id, ok, extra) {
   if (st.log.length > 1500) st.log.splice(0, st.log.length - 1500);
   Store.save();
 }
+function countCheck(tool) {   // every press of a Check button, per day and tool: guessing by pressing Check shows in the report
+  const st = Store.get(), k = dayKey() + '|' + tool; st.checks = st.checks || {}; st.checks[k] = (st.checks[k] || 0) + 1; Store.save();
+}
 function dots(tool, id) { const b = itemState(tool, id).box; return '●'.repeat(b) + '○'.repeat(5 - b); }
 
 /* ---- time on task: seconds with real activity, per day / tool / unit ---- */
@@ -120,7 +123,7 @@ function buildReport(tool, toolLabel, days) {
     const missed = es.filter(e => !e.ok).map(e => e.id + (e.why ? ' (' + e.why + ')' : ''));
     const tk = d + '|' + unit, secs = st.secs[d + '|' + tool + '|' + unit] || 0, mins = Math.round(secs / 60);
     const timeLine = timeShown[tk] ? '' : '  time on task that day (all clues): ' + mins + ' min'; timeShown[tk] = 1;
-    const u = D.units.find(x => x.id === unit);
+    const u = D.units.find(x => x.id === unit) || (D.books || []).find(x => x.id === unit);
     const cued = es.filter(e => e.cue), cuedRight = cued.filter(e => e.ok).length;
     lines.push('', d + '  ' + (u ? u.title : unit) + (mode ? '  [' + mode + ']' : ''),
       '  first try right: ' + right + ' of ' + es.length + (missed.length ? '' : ''),
@@ -129,6 +132,8 @@ function buildReport(tool, toolLabel, days) {
       ...(timeLine ? [timeLine] : []));
     rows.push([d, u ? u.title : unit, mode || '', right, es.length, missed.join('; '), timeLine ? mins : '', cued.length ? cued.map(e => e.id).join('; ') : ''].join('\t'));
   }
+  const presses = Object.entries(st.checks || {}).filter(([k]) => k.split('|')[1] === tool && today - dayNum(k.split('|')[0]) < days).sort().reverse();
+  if (presses.length) lines.push('', 'Check pressed: ' + presses.map(([k, n]) => k.split('|')[0] + ' ' + n + (n === 1 ? ' time' : ' times')).join('; '));
   const leaves = Object.entries(st.fsLeaves || {}).filter(([d]) => today - dayNum(d) < days).sort().reverse();
   if (leaves.length) lines.push('', 'Left full screen (all pinned tools on this device): ' + leaves.map(([d, n]) => d + ' ' + n + (n === 1 ? ' time' : ' times')).join('; '));
   lines.push('', 'Review dots (●●●○○) count right-first-time answers on separate days, after gaps of 1, 3, 7 and 21 days. Five dots = right first time after a gap of 21 days or more.');

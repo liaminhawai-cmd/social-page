@@ -38,7 +38,13 @@ def validate(d):
         for wid in u['words']:
             if wid not in d['words']:
                 errs.append(f'unit {u["id"]}: unknown word {wid}')
+    for b in d['books']:
+        for uid in b['units']:
+            if uid not in {u['id'] for u in d['units']}:
+                errs.append(f'book {b["id"]}: unknown unit {uid}')
     for r in d['rhymes']:
+        if r['key'] not in d['words']:
+            errs.append(f'rhyme {r["id"]}: key {r["key"]} is not in words (the sort page shows its picture and Chinese)')
         for w in r['words']:
             if not w.endswith(r['rime']):
                 errs.append(f'rhyme {r["id"]}: {w} does not end in -{r["rime"]}')
